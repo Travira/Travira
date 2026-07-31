@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.travira.components.TraviraBottomBar
+import com.example.travira.screens.home.HomeScreen
 import com.example.travira.ui.theme.TraviraTheme
 
 class MainActivity : ComponentActivity() {
@@ -67,7 +68,7 @@ private fun ScreenContent(selectedIndex: Int) {
 
     when (selectedIndex) {
 
-        0 -> Text("🏠 Home Screen")
+        0 -> HomeScreen()
 
         1 -> Text("🤖 AI Screen")
 
