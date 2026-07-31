@@ -1,7 +1,6 @@
 package com.example.travira.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -36,21 +34,21 @@ fun AppCard(
     onClick: () -> Unit
 ) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(210.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .clickable { onClick() },
+            .height(210.dp),
         shape = RoundedCornerShape(22.dp),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp
         )
     ) {
+
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
 
-            // Full background image from Cloudinary
+            // Full background image
             AsyncImage(
                 model = place.imageUrl,
                 contentDescription = place.name,
@@ -67,7 +65,7 @@ fun AppCard(
                 }
             )
 
-            // Dark gradient at bottom for readable text
+            // Dark gradient at bottom
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -82,7 +80,7 @@ fun AppCard(
                     )
             )
 
-            // Place information
+            // Card information
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,6 +106,7 @@ fun AppCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Rating",

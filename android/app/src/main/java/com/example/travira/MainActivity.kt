@@ -4,17 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.travira.components.TraviraBottomBar
+import com.example.travira.data.Place
+import com.example.travira.data.places
 import com.example.travira.screens.home.HomeScreen
+import com.example.travira.screens.places.PlaceScreen
 import com.example.travira.ui.theme.TraviraTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,45 +38,72 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TraviraApp() {
 
-    var selectedIndex by remember { mutableIntStateOf(0) }
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-
-        bottomBar = {
-            TraviraBottomBar(
-                selectedIndex = selectedIndex,
-                onItemSelected = { selectedIndex = it }
-            )
-        }
-
-    ) { innerPadding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-
-            ScreenContent(selectedIndex)
-
-        }
-
+    // Bottom navigation selected item
+    var selectedIndex by remember {
+        mutableStateOf(0)
     }
-}
 
-@Composable
-private fun ScreenContent(selectedIndex: Int) {
+    // Currently selected place
+    var selectedPlace by remember {
+        mutableStateOf<Place?>(null)
+    }
 
-    when (selectedIndex) {
+    TraviraTheme {
 
-        0 -> HomeScreen()
+        // ─────────────────────────────────
+        // PLACE DETAIL SCREEN
+        // ─────────────────────────────────
+        if (selectedPlace != null) {
 
-        1 -> Text("🤖 AI Screen")
+            PlaceScreen(
+                place = selectedPlace!!,
+                onBackClick = {
+                    selectedPlace = null
+                }
+            )
 
-        2 -> Text("ℹ️ About Screen")
+        } else {
 
+            // ─────────────────────────────────
+            // MAIN APP SCREENS
+            // ─────────────────────────────────
+            Scaffold(
+                bottomBar = {
+
+                    TraviraBottomBar(
+                        selectedIndex = selectedIndex,
+                        onItemSelected = {
+                            selectedIndex = it
+                        }
+                    )
+                }
+            ) { paddingValues ->
+
+                when (selectedIndex) {
+
+                    // HOME
+                    0 -> {
+                        HomeScreen(
+                            places = places,
+                            modifier = Modifier.padding(paddingValues),
+                            onPlaceClick = { place ->
+                                selectedPlace = place
+                            }
+                        )
+                    }
+
+                    // AI CHAT
+                    1 -> {
+                       print("Ai")
+                    }
+
+                    // ABOUT
+                    2 -> {
+                        print("about")
+                    }
+                }
+            }
+        }
     }
 }
 
