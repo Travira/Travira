@@ -18,3 +18,6 @@ local.properties
 *.keystore
 
 keystore.properties
+
+.gradle/
+**/gradle-daemon-jvm.properties
