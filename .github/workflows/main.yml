@@ -1,4 +1,4 @@
-name: Android APK Build
+name: Android Release Build
 
 on:
   push:
@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v4
+
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -19,14 +21,29 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build APK
+
+      - name: Create keystore file
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/travira-release-key.jks
+
+
+      - name: Create keystore properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/keystore.properties
+          echo "storeFile=../travira-release-key.jks" >> android/keystore.properties
+
+
+      - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Upload APK
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: travira-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Travira-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
