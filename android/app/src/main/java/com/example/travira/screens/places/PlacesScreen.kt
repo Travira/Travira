@@ -36,8 +36,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.travira.data.Place
-
+//import com.example.travira.data.Place
+import com.example.travira.model.Place
 @Composable
 fun PlaceScreen(
     place: Place,

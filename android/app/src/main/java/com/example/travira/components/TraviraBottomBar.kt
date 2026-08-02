@@ -6,15 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,7 +21,6 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,135 +28,221 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+
 
 data class BottomBarItem(
     val title: String,
     val icon: ImageVector
 )
 
+
 @Composable
 fun TraviraBottomBar(
     selectedIndex: Int,
-    onItemSelected: (Int) -> Unit
+    onItemSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
 
+
     val items = listOf(
-        BottomBarItem("Home", Icons.Default.Home),
-        BottomBarItem("AI", Icons.Default.SmartToy),
-        BottomBarItem("About", Icons.Default.Info)
+
+        BottomBarItem(
+            "Home",
+            Icons.Default.Home
+        ),
+
+        BottomBarItem(
+            "AI",
+            Icons.Default.SmartToy
+        ),
+
+        BottomBarItem(
+            "About",
+            Icons.Default.Info
+        )
+
     )
 
-    Box(
-        modifier = Modifier
+
+    Row(
+
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
+            .padding(
+                start = 60.dp,
+                end = 60.dp,
+                bottom = 16.dp
+            ),
+
+        horizontalArrangement = Arrangement.Center
+
     ) {
 
+
         Surface(
-            modifier = Modifier.shadow(
-                elevation = 16.dp,
-                shape = RoundedCornerShape(50.dp)
-            ),
+
+            modifier = Modifier
+                .fillMaxWidth(1f)
+                .height(65.dp)
+                .shadow(
+                    elevation = 5.dp,
+                    shape = RoundedCornerShape(50.dp)
+                ),
+
             shape = RoundedCornerShape(50.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 4.dp
+
+            color = Color(0xFF90CAF9).copy(
+                alpha = 0.50f
+            ),
+
+            tonalElevation = 0.dp
+
         ) {
 
+
             Row(
+
                 modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 10.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .background(
+                        Color.White.copy(alpha = 0.15f),
+                        RoundedCornerShape(50.dp)
+                    )
+                    .padding(horizontal = 15.dp),
+
                 horizontalArrangement = Arrangement.SpaceEvenly,
+
                 verticalAlignment = Alignment.CenterVertically
+
             ) {
+
 
                 items.forEachIndexed { index, item ->
 
-                    val selected = selectedIndex == index
 
-                    val iconColor by animateColorAsState(
-                        if (selected)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            Color.Gray,
-                        label = ""
-                    )
+                    val selected =
+                        selectedIndex == index
 
-                    val backgroundColor by animateColorAsState(
-                        if (selected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            Color.Transparent,
-                        label = ""
-                    )
+
 
                     val iconSize by animateDpAsState(
-                        if (selected) 28.dp else 24.dp,
+
+                        targetValue =
+                            if(selected)
+                                30.dp
+                            else
+                                25.dp,
+
                         label = ""
+
                     )
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.clickable {
-                            onItemSelected(index)
-                        }
+
+
+                    val iconColor by animateColorAsState(
+
+                        targetValue =
+                            if(selected)
+
+                                MaterialTheme.colorScheme.primary
+
+                            else
+
+                                Color.Gray,
+
+                        label = ""
+
+                    )
+
+
+
+                    Box(
+
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+
+                                color =
+                                    if(selected)
+
+                                        MaterialTheme
+                                            .colorScheme
+                                            .primary
+                                            .copy(
+                                                alpha = 0.15f
+                                            )
+
+                                    else
+
+                                        Color.Transparent,
+
+                                shape = CircleShape
+
+                            )
+                            .clickable {
+
+                                onItemSelected(index)
+
+                            },
+
+                        contentAlignment = Alignment.Center
+
                     ) {
 
-                        Box(
+
+                        Icon(
+
+                            imageVector = item.icon,
+
+                            contentDescription = item.title,
+
                             modifier = Modifier
-                                .background(
-                                    backgroundColor,
-                                    CircleShape
-                                )
-                                .padding(7.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
+                                .size(iconSize),
 
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title,
-                                modifier = Modifier.size(iconSize),
-                                tint = iconColor
-                            )
+                            tint = iconColor
 
-                        }
-
-                        Spacer(modifier = Modifier.height(3.dp))
-
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (selected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                Color.Gray,
-                            fontWeight = if (selected)
-                                FontWeight.Bold
-                            else
-                                FontWeight.Normal
                         )
+
+
                     }
+
+
                 }
+
+
             }
+
+
         }
+
+
     }
+
 }
+
+
+
 
 @Preview(showBackground = true)
 @Composable
 fun TraviraBottomBarPreview() {
 
+
     MaterialTheme {
 
+
         TraviraBottomBar(
+
             selectedIndex = 0,
+
             onItemSelected = {}
+
         )
 
+
     }
+
 }

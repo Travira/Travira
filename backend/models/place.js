@@ -1,43 +1,142 @@
 const mongoose = require("mongoose");
 
-const placeSchema = new mongoose.Schema(
-    {
-        name: {
-            type: String,
-            required: true
-        },
-        shortDescription: {
-            type: String,
-            required: true
-        },
-        city: {
-            type: String,
-            required: true
-        },
-        state: {
-            type: String,
-            required: true
-        },
-        country: {
-            type: String,
-            required: true
-        },
-        location: {
-            type: String,
-            required: true
-        },
-        imageUrl: {
-            type: String,
-            required: true
-        },
-        rating: {
-            type: Number,
-            default: 0
-        }
-    },
-    {
-        timestamps: true
-    }
-);
 
-module.exports = mongoose.model("Place", placeSchema, "place");
+const placeSchema = new mongoose.Schema({
+
+
+    name:{
+        type:String,
+        required:true
+    },
+
+
+    shortDescription:String,
+
+
+    description:String,
+
+
+    city:String,
+
+
+    state:String,
+
+
+    country:String,
+
+
+    location:String,
+
+
+    imageUrl:String,
+
+
+
+    addedBy:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
+    },
+
+
+
+    ratings:[
+
+        {
+
+            user:{
+                type:mongoose.Schema.Types.ObjectId,
+                ref:"User"
+            },
+
+
+            value:{
+                type:Number,
+                min:1,
+                max:5
+            }
+
+        }
+
+    ],
+
+
+
+    averageRating:{
+        type:Number,
+        default:0
+    },
+
+
+
+    visitorsCount:{
+        type:Number,
+        default:0
+    },
+
+
+
+    // Admin Approval System
+
+    approvalStatus:{
+
+        type:String,
+
+        enum:[
+            "pending",
+            "approved",
+            "rejected"
+        ],
+
+        default:"pending"
+
+    },
+
+
+
+    adminFeedback:{
+
+        type:String,
+
+        default:""
+
+    },
+
+
+
+    reviewedBy:{
+
+        type:mongoose.Schema.Types.ObjectId,
+
+        ref:"User"
+
+    },
+
+
+
+    reviewedAt:{
+
+        type:Date
+
+    },
+
+
+
+    createdAt:{
+
+        type:Date,
+
+        default:Date.now
+
+    }
+
+
+});
+
+
+module.exports =
+mongoose.model(
+"Place",
+placeSchema,
+"place"
+);
