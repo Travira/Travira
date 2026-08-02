@@ -1,34 +1,23 @@
 # Android Studio
-*.iml
 .idea/
-*.iws
-*.ipr
+.kotlin/
 
 # Gradle
 .gradle/
 **/build/
-build/
 
-# Local configuration
+# Local files
 local.properties
 
-# Kotlin
-.kotlin/
-
-# Android generated files
-/captures/
-/.externalNativeBuild/
-/.cxx/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Signing keys (NEVER upload)
+# Android signing
 *.jks
 *.keystore
 keystore.properties
 
-# Release files
+# Backend secrets
+.env
+backend/.env
+
+# Generated files
 *.apk
 *.aab
