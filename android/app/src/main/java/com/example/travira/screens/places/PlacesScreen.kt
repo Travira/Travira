@@ -124,7 +124,7 @@ fun PlaceScreen(
                 )
 
                 Text(
-                    text = "${place.city}, ${place.state}, ${place.country}",
+                    text = listOfNotNull(place.city, place.state, place.country).joinToString(", "),
                     fontSize = 15.sp,
                     color = Color.Gray
                 )
@@ -173,7 +173,7 @@ fun PlaceScreen(
             )
 
             Text(
-                text = place.shortDescription,
+                text = place.shortDescription.toString(),
                 fontSize = 15.sp,
                 lineHeight = 24.sp,
                 color = Color.DarkGray
@@ -219,7 +219,7 @@ fun PlaceScreen(
                     )
 
                     Text(
-                        text = place.location,
+                        text = place.location.toString(),
                         fontSize = 15.sp,
                         color = Color.DarkGray
                     )
