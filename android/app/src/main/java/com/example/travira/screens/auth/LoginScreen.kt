@@ -1,7 +1,7 @@
 package com.example.travira.screens.auth
 
+import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.travira.auth.TokenManager
 import com.example.travira.remote.LoginRequest
 import com.example.travira.remote.RegisterRequest
@@ -81,19 +82,7 @@ fun LoginScreen(
                 )
             )
     ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .padding(12.dp)
-                .align(Alignment.TopStart)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-
+        // Content first so the back button (drawn after) sits above it for hit-testing
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,10 +100,10 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = when {
-                isAdminRegister -> "Apply for Admin access"
-                isRegister -> "Create your account"
-                else -> "Welcome back"
-            },
+                    isAdminRegister -> "Apply for Admin access"
+                    isRegister -> "Create your account"
+                    else -> "Welcome back"
+                },
                 fontSize = 15.sp,
                 color = Color.White.copy(alpha = 0.85f)
             )
@@ -127,77 +116,99 @@ fun LoginScreen(
                 color = Color.White,
                 tonalElevation = 4.dp
             ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
 
-            if (isRegister) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    leadingIcon = { Icon(Icons.Default.Person, null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color(0xFF1A1A1A),
-                        unfocusedTextColor = Color(0xFF1A1A1A),
-                        focusedLabelColor = Color(0xFF1565C0),
-                        unfocusedLabelColor = Color(0xFF757575),
-                        cursorColor = Color(0xFF1565C0),
-                        focusedBorderColor = Color(0xFF1565C0),
-                        unfocusedBorderColor = Color(0xFFBDBDBD),
-                        focusedLeadingIconColor = Color(0xFF1565C0),
-                        unfocusedLeadingIconColor = Color(0xFF757575)
+                    if (isRegister) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Name") },
+                            leadingIcon = { Icon(Icons.Default.Person, null) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color(0xFF1A1A1A),
+                                unfocusedTextColor = Color(0xFF1A1A1A),
+                                focusedLabelColor = Color(0xFF1565C0),
+                                unfocusedLabelColor = Color(0xFF757575),
+                                cursorColor = Color(0xFF1565C0),
+                                focusedBorderColor = Color(0xFF1565C0),
+                                unfocusedBorderColor = Color(0xFFBDBDBD),
+                                focusedLeadingIconColor = Color(0xFF1565C0),
+                                unfocusedLeadingIconColor = Color(0xFF757575)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
+                        leadingIcon = { Icon(Icons.Default.Email, null) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF1A1A1A),
+                            unfocusedTextColor = Color(0xFF1A1A1A),
+                            focusedLabelColor = Color(0xFF1565C0),
+                            unfocusedLabelColor = Color(0xFF757575),
+                            cursorColor = Color(0xFF1565C0),
+                            focusedBorderColor = Color(0xFF1565C0),
+                            unfocusedBorderColor = Color(0xFFBDBDBD),
+                            focusedLeadingIconColor = Color(0xFF1565C0),
+                            unfocusedLeadingIconColor = Color(0xFF757575)
+                        )
                     )
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                leadingIcon = { Icon(Icons.Default.Email, null) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        leadingIcon = { Icon(Icons.Default.Lock, null) },
+                        singleLine = true,
+                        visualTransformation = if (showPassword) VisualTransformation.None
+                        else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    if (showPassword) Icons.Default.VisibilityOff
+                                    else Icons.Default.Visibility,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF1A1A1A),
+                            unfocusedTextColor = Color(0xFF1A1A1A),
+                            focusedLabelColor = Color(0xFF1565C0),
+                            unfocusedLabelColor = Color(0xFF757575),
+                            cursorColor = Color(0xFF1565C0),
+                            focusedBorderColor = Color(0xFF1565C0),
+                            unfocusedBorderColor = Color(0xFFBDBDBD),
+                            focusedLeadingIconColor = Color(0xFF1565C0),
+                            unfocusedLeadingIconColor = Color(0xFF757575)
+                        )
+                    )
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, null) },
-                singleLine = true,
-                visualTransformation = if (showPassword) VisualTransformation.None
-                else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { showPassword = !showPassword }) {
-                        Icon(
-                            if (showPassword) Icons.Default.VisibilityOff
-                            else Icons.Default.Visibility,
-                            contentDescription = null
+                    if (error != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = error!!,
+                            color = Color(0xFFC62828),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
-            )
-
-            if (error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = error!!,
-                    color = Color(0xFFFFCDD2),
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center
-                )
+                }
             }
-
-            } // Column inside Surface
-            } // Surface
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -259,6 +270,7 @@ fun LoginScreen(
                             onLoginSuccess()
                         } catch (e: Exception) {
                             error = e.message ?: "Something went wrong"
+                            Log.e("TRAVIRA_AUTH", "Login/Register failed: ${e.message}", e)
                         } finally {
                             loading = false
                         }
@@ -319,6 +331,24 @@ fun LoginScreen(
                 color = Color.White.copy(alpha = 0.65f),
                 textAlign = TextAlign.Center,
                 lineHeight = 16.sp
+            )
+        }
+
+        // Drawn last + zIndex so it receives touches above the full-size Column
+        IconButton(
+            onClick = {
+                Log.d("TRAVIRA_AUTH", "LoginScreen UI back button clicked")
+                onBack()
+            },
+            modifier = Modifier
+                .padding(12.dp)
+                .align(Alignment.TopStart)
+                .zIndex(1f)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
             )
         }
     }

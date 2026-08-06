@@ -228,6 +228,7 @@ fun TraviraApp(
 
         showLogin -> {
             BackHandler {
+                Log.d("TRAVIRA_AUTH", "LoginScreen system BackHandler fired → closing login")
                 showLogin = false
                 pendingAction = PendingAction.NONE
             }
@@ -235,6 +236,7 @@ fun TraviraApp(
                 tokenManager = tokenManager,
                 onLoginSuccess = { onLoginSuccess() },
                 onBack = {
+                    Log.d("TRAVIRA_AUTH", "LoginScreen onBack callback → closing login, pendingAction was $pendingAction")
                     showLogin = false
                     pendingAction = PendingAction.NONE
                 }
