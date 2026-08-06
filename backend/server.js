@@ -9,6 +9,7 @@ const path = require("path");
 const placeRoutes = require("./routes/placeroute");
 const userRoutes = require("./routes/user");
 const adminRoutes = require("./routes/adminRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const bcrypt = require("bcrypt");
 const User = require("./models/user");
@@ -74,6 +75,7 @@ app.use("/api/place", placeRoutes);
 app.use("/api/places", placeRoutes); // alias for older Android clients
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: "API Route Not Found" }));
 

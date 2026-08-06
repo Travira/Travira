@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -15,8 +16,9 @@ import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
 
 /**
- * Gson helpers: API sometimes returns ObjectId strings, sometimes populated objects
- * for addedBy / wishlist / addedPlaces.
+ * Accepts either a populated user object or a raw ObjectId string for addedBy.
+ * Parses the object manually — never calls context.deserialize(AddedByUser)
+ * (that would recurse and crash the app).
  */
 private class AddedByUserDeserializer : JsonDeserializer<AddedByUser?> {
     override fun deserialize(
@@ -25,17 +27,34 @@ private class AddedByUserDeserializer : JsonDeserializer<AddedByUser?> {
         context: JsonDeserializationContext?
     ): AddedByUser? {
         if (json == null || json.isJsonNull) return null
-        if (json.isJsonPrimitive) {
-            val id = json.asString
-            return if (id.isBlank()) null else AddedByUser(_id = id)
+        return try {
+            when {
+                json.isJsonPrimitive -> {
+                    val id = json.asString
+                    if (id.isBlank()) null else AddedByUser(_id = id)
+                }
+                json.isJsonObject -> {
+                    val o: JsonObject = json.asJsonObject
+                    fun str(key: String): String? =
+                        o.get(key)?.takeIf { it.isJsonPrimitive }?.asString
+                    AddedByUser(
+                        _id = str("_id"),
+                        id = str("id"),
+                        name = str("name"),
+                        email = str("email")
+                    )
+                }
+                else -> null
+            }
+        } catch (_: Exception) {
+            null
         }
-        if (json.isJsonObject) {
-            return context?.deserialize(json, AddedByUser::class.java)
-        }
-        return null
     }
 }
 
+/**
+ * Accepts an array of place objects OR raw ObjectId strings (unpopulated refs).
+ */
 private class PlaceListDeserializer : JsonDeserializer<List<Place>> {
     override fun deserialize(
         json: JsonElement?,
@@ -45,15 +64,54 @@ private class PlaceListDeserializer : JsonDeserializer<List<Place>> {
         if (json == null || !json.isJsonArray) return emptyList()
         val out = ArrayList<Place>()
         for (el in json.asJsonArray) {
-            when {
-                el == null || el.isJsonNull -> continue
-                el.isJsonObject -> {
-                    context?.deserialize<Place>(el, Place::class.java)?.let { out.add(it) }
+            try {
+                when {
+                    el == null || el.isJsonNull -> continue
+                    el.isJsonPrimitive -> {
+                        val id = el.asString
+                        if (id.isNotBlank()) out.add(Place(_id = id))
+                    }
+                    el.isJsonObject -> {
+                        val o = el.asJsonObject
+                        fun str(key: String): String? =
+                            o.get(key)?.takeIf { !it.isJsonNull && it.isJsonPrimitive }?.asString
+                        fun dbl(key: String): Double =
+                            try {
+                                o.get(key)?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0
+                            } catch (_: Exception) {
+                                0.0
+                            }
+                        fun int(key: String): Int =
+                            try {
+                                o.get(key)?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
+                            } catch (_: Exception) {
+                                0
+                            }
+                        out.add(
+                            Place(
+                                _id = str("_id").orEmpty(),
+                                name = str("name").orEmpty(),
+                                shortDescription = str("shortDescription"),
+                                description = str("description"),
+                                city = str("city"),
+                                state = str("state"),
+                                country = str("country"),
+                                location = str("location"),
+                                imageUrl = str("imageUrl"),
+                                rating = dbl("rating"),
+                                averageRating = dbl("averageRating"),
+                                visitorsCount = int("visitorsCount"),
+                                ratingsCount = int("ratingsCount"),
+                                approvalStatus = str("approvalStatus"),
+                                adminFeedback = str("adminFeedback"),
+                                createdAt = str("createdAt"),
+                                addedBy = null
+                            )
+                        )
+                    }
                 }
-                el.isJsonPrimitive -> {
-                    val id = el.asString
-                    if (id.isNotBlank()) out.add(Place(_id = id))
-                }
+            } catch (_: Exception) {
+                // skip bad element
             }
         }
         return out
@@ -96,6 +154,7 @@ object RetrofitInstance {
     val placeApi: PlaceApi by lazy { retrofit.create(PlaceApi::class.java) }
     val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
     val adminApi: AdminApi by lazy { retrofit.create(AdminApi::class.java) }
+    val chatApi: ChatApi by lazy { retrofit.create(ChatApi::class.java) }
 
     /** @deprecated use placeApi */
     val api: PlaceApi get() = placeApi

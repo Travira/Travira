@@ -29,6 +29,7 @@ import com.example.travira.model.User
 import com.example.travira.remote.RefreshRequest
 import com.example.travira.remote.RetrofitInstance
 import com.example.travira.screens.admin.AdminDashboardScreen
+import com.example.travira.screens.ai.AIChatScreen
 import com.example.travira.screens.auth.LoginScreen
 import com.example.travira.screens.home.HomeScreen
 import com.example.travira.screens.places.AddPlaceScreen
@@ -374,17 +375,26 @@ fun TraviraApp(
                         )
                     }
                     1 -> {
-                        LaunchedEffect(Unit) {
-                            if (!tokenManager.isLoggedIn) {
+                        if (!tokenManager.isLoggedIn) {
+                            LaunchedEffect(Unit) {
                                 requireAuth(PendingAction.AI_CHAT)
                                 selectedIndex = 0
                             }
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.material3.Text("AI Chatbot coming soon")
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.Text("Login required for Travira AI")
+                            }
+                        } else {
+                            AIChatScreen(
+                                tokenManager = tokenManager,
+                                onRequireLogin = {
+                                    requireAuth(PendingAction.AI_CHAT)
+                                    selectedIndex = 0
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                     }
                     2 -> {
