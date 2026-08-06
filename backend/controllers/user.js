@@ -451,47 +451,33 @@ message:error.message
 // ================= Current User =================
 
 
-exports.getCurrentUser = async(req,res)=>{
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("-password -refreshTokens")
+      .populate(
+        "addedPlaces",
+        "name shortDescription description city state country location imageUrl averageRating visitorsCount approvalStatus adminFeedback createdAt"
+      )
+      .populate(
+        "wishlist",
+        "name shortDescription description city state country location imageUrl averageRating visitorsCount approvalStatus"
+      )
+      .populate({
+        path: "visitedPlaces.place",
+        select:
+          "name shortDescription description city state country location imageUrl averageRating visitorsCount approvalStatus"
+      });
 
-try{
-
-
-const user =
-await User.findById(req.user.id)
-
-.select("-password -refreshTokens")
-
-.populate(
-"addedPlaces",
-"name city state country imageUrl averageRating"
-)
-
-.populate(
-"wishlist",
-"name city state country imageUrl averageRating"
-);
-
-
-
-res.json({
-
-success:true,
-
-user
-
-});
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
 };
 
 
@@ -689,5 +675,131 @@ exports.registerAdmin = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// ================= Update Profile =================
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const allowed = ["name", "phone", "location", "profileImage", "coverImage"];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true }
+    ).select("-password -refreshTokens");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, message: "Profile updated", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= Visited Places =================
+
+exports.getVisitedPlaces = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate({
+      path: "visitedPlaces.place",
+      select: "name shortDescription description city state country location imageUrl averageRating visitorsCount approvalStatus"
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const places = (user.visitedPlaces || [])
+      .filter((v) => v.place)
+      .map((v) => ({
+        ...v.place.toObject(),
+        visitedAt: v.visitedAt
+      }));
+
+    res.json({ success: true, places });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.addVisitedPlace = async (req, res) => {
+  try {
+    const placeId = req.params.id;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const exists = (user.visitedPlaces || []).some(
+      (v) => v.place && v.place.toString() === placeId
+    );
+    if (exists) {
+      return res.json({ success: true, message: "Already marked as visited" });
+    }
+
+    user.visitedPlaces.push({ place: placeId, visitedAt: new Date() });
+    await user.save();
+
+    res.json({ success: true, message: "Marked as visited" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.removeVisitedPlace = async (req, res) => {
+  try {
+    const placeId = req.params.id;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.visitedPlaces = (user.visitedPlaces || []).filter(
+      (v) => !v.place || v.place.toString() !== placeId
+    );
+    await user.save();
+
+    res.json({ success: true, message: "Removed from visited places" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= Mark notifications read =================
+
+exports.markNotificationsRead = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const { ids } = req.body || {};
+    if (Array.isArray(ids) && ids.length > 0) {
+      user.notifications.forEach((n) => {
+        if (ids.includes(n._id.toString())) n.read = true;
+      });
+    } else {
+      user.notifications.forEach((n) => {
+        n.read = true;
+      });
+    }
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Notifications marked as read",
+      notifications: user.notifications
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

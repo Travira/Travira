@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema({
         default:""
     },
 
+    coverImage:{
+        type:String,
+        default:""
+    },
+
     phone:{
         type:String,
         default:""

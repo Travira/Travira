@@ -2,102 +2,42 @@ const express = require("express");
 
 const router = express.Router();
 
-
-const authMiddleware =
-require("../middleware/authMiddleware");
-
-
+const authMiddleware = require("../middleware/authMiddleware");
 
 const {
+  register,
+  registerAdmin,
+  login,
+  profile,
+  getCurrentUser,
+  updateProfile,
+  refreshToken,
+  logout,
+  logoutAll,
+  getNotifications,
+  markNotificationsRead,
+  getVisitedPlaces,
+  addVisitedPlace,
+  removeVisitedPlace
+} = require("../controllers/user");
 
-register,
+router.post("/register", register);
+router.post("/register-admin", registerAdmin);
+router.post("/login", login);
+router.post("/refresh-token", refreshToken);
 
-registerAdmin,
+router.get("/profile", authMiddleware, profile);
+router.put("/profile", authMiddleware, updateProfile);
+router.get("/me", authMiddleware, getCurrentUser);
 
-login,
+router.get("/notifications", authMiddleware, getNotifications);
+router.put("/notifications/read", authMiddleware, markNotificationsRead);
 
-profile,
+router.get("/visited", authMiddleware, getVisitedPlaces);
+router.post("/visited/:id", authMiddleware, addVisitedPlace);
+router.delete("/visited/:id", authMiddleware, removeVisitedPlace);
 
-getCurrentUser,
-
-refreshToken,
-
-logout,
-
-logoutAll,
-
-getNotifications
-
-}=require("../controllers/user");
-
-
-
-
-
-router.post(
-"/register",
-register
-);
-
-router.post(
-"/register-admin",
-registerAdmin
-);
-
-
-
-router.post(
-"/login",
-login
-);
-
-
-
-router.post(
-"/refresh-token",
-refreshToken
-);
-
-
-
-router.get(
-"/profile",
-authMiddleware,
-profile
-);
-
-
-
-router.get(
-"/me",
-authMiddleware,
-getCurrentUser
-);
-
-
-
-router.get(
-"/notifications",
-authMiddleware,
-getNotifications
-);
-
-
-
-router.post(
-"/logout",
-authMiddleware,
-logout
-);
-
-
-
-router.post(
-"/logout-all",
-authMiddleware,
-logoutAll
-);
-
-
+router.post("/logout", authMiddleware, logout);
+router.post("/logout-all", authMiddleware, logoutAll);
 
 module.exports = router;

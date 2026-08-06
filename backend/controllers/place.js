@@ -5,45 +5,30 @@ const User = require("../models/user");
 
 // ================= Get Approved Places =================
 
-exports.getPlaces = async(req,res)=>{
+exports.getPlaces = async (req, res) => {
+  try {
+    // Public home feed: approved places + legacy docs that predate approvalStatus
+    const places = await Place.find({
+      $or: [
+        { approvalStatus: "approved" },
+        { approvalStatus: { $exists: false } },
+        { approvalStatus: null },
+        { approvalStatus: "" }
+      ]
+    })
+      .populate("addedBy", "name email")
+      .sort({ createdAt: -1 });
 
-try{
-
-
-// User home: only APPROVED places
-const places =
-await Place.find({
-    approvalStatus: "approved"
-})
-.populate(
-"addedBy",
-"name email"
-);
-
-
-
-res.json({
-
-success:true,
-
-data:places
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-success:false,
-
-message:error.message
-
-});
-
-}
-
+    res.json({
+      success: true,
+      data: places
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 
@@ -54,60 +39,35 @@ message:error.message
 
 // ================= Get Single Approved Place =================
 
+exports.getPlaceById = async (req, res) => {
+  try {
+    const place = await Place.findOne({
+      _id: req.params.id,
+      $or: [
+        { approvalStatus: "approved" },
+        { approvalStatus: { $exists: false } },
+        { approvalStatus: null },
+        { approvalStatus: "" }
+      ]
+    }).populate("addedBy", "name email");
 
-exports.getPlaceById = async(req,res)=>{
+    if (!place) {
+      return res.status(404).json({
+        success: false,
+        message: "Place not found"
+      });
+    }
 
-try{
-
-
-const place =
-await Place.findOne({
-
-_id:req.params.id,
-
-approvalStatus:"approved"
-
-})
-.populate(
-"addedBy",
-"name email"
-);
-
-
-
-if(!place){
-
-return res.status(404).json({
-
-message:"Place not found"
-
-});
-
-}
-
-
-
-res.json({
-
-success:true,
-
-place
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
-
+    res.json({
+      success: true,
+      place
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 
@@ -539,37 +499,23 @@ message:error.message
 
 
 
-exports.getWishlist = async(req,res)=>{
+exports.getWishlist = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate(
+      "wishlist",
+      "name shortDescription description city state country location imageUrl averageRating visitorsCount approvalStatus"
+    );
 
-try{
-
-
-const user =
-await User.findById(req.user.id)
-.populate("wishlist");
-
-
-
-res.json({
-
-success:true,
-
-wishlist:user.wishlist
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+    res.json({
+      success: true,
+      wishlist: user?.wishlist || []
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 
