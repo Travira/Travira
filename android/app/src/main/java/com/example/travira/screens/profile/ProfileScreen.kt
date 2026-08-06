@@ -275,11 +275,11 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SocialIcon("IG", Color(0xFFE1306C)) { openUrl(context, "https://instagram.com/") }
-                    SocialIcon("Pin", Color(0xFFE60023)) { openUrl(context, "https://pinterest.com/") }
-                    SocialIcon("WA", Color(0xFF25D366)) { openUrl(context, "https://wa.me/") }
-                    SocialIcon("Git", Color(0xFF333333)) { openUrl(context, "https://github.com/") }
-                    SocialIcon("Call", Color(0xFF1565C0)) { openUrl(context, "tel:") }
+                    SocialIcon("IG", Color(0xFFE1306C)) { openUrl(context, "https://instagram.com/preetp_0270") }
+                    SocialIcon("Pin", Color(0xFFE60023)) { openUrl(context, "https://pinterest.com/preetp_0270") }
+                    SocialIcon("WA", Color(0xFF25D366)) { openUrl(context, "https://wa.me/7383215032") }
+                    SocialIcon("Git", Color(0xFF333333)) { openUrl(context, "https://github.com/travira") }
+                    SocialIcon("Call", Color(0xFF1565C0)) { openUrl(context, "tel:7383215032") }
                 }
             }
         }
