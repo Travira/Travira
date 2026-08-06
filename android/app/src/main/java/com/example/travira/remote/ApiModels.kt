@@ -1,5 +1,6 @@
 package com.example.travira.remote
 
+import com.example.travira.model.NotificationItem
 import com.example.travira.model.Place
 import com.example.travira.model.User
 
@@ -28,6 +29,24 @@ data class AddPlaceRequest(
     val imageUrl: String? = null
 )
 
+data class WishlistResponse(
+    val success: Boolean = false,
+    val wishlist: List<Place> = emptyList(),
+    val message: String? = null
+)
+
+data class MyPlacesResponse(
+    val success: Boolean = false,
+    val places: List<Place> = emptyList(),
+    val message: String? = null
+)
+
+data class VisitedPlacesResponse(
+    val success: Boolean = false,
+    val places: List<Place> = emptyList(),
+    val message: String? = null
+)
+
 // ── Auth ────────────────────────────────────────────
 
 data class LoginRequest(
@@ -39,6 +58,14 @@ data class RegisterRequest(
     val name: String,
     val email: String,
     val password: String
+)
+
+data class RegisterAdminRequest(
+    val name: String,
+    val email: String,
+    val password: String,
+    val phone: String? = null,
+    val location: String? = null
 )
 
 data class AuthUserDto(
@@ -78,7 +105,21 @@ data class UserProfileResponse(
     val message: String? = null
 )
 
+data class UpdateProfileRequest(
+    val name: String? = null,
+    val phone: String? = null,
+    val location: String? = null,
+    val profileImage: String? = null,
+    val coverImage: String? = null
+)
+
 data class SimpleMessageResponse(
     val success: Boolean = false,
+    val message: String? = null
+)
+
+data class NotificationsResponse(
+    val success: Boolean = false,
+    val notifications: List<NotificationItem> = emptyList(),
     val message: String? = null
 )

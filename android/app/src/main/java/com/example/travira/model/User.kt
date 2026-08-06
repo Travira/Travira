@@ -10,14 +10,22 @@ data class User(
     val phone: String? = null,
     val location: String? = null,
     val profileImage: String? = null,
+    val coverImage: String? = null,
     val wishlist: List<Place> = emptyList(),
     val addedPlaces: List<Place> = emptyList(),
+    val visitedPlaces: List<VisitedPlaceEntry> = emptyList(),
     val notifications: List<NotificationItem> = emptyList()
 ) {
     val userId: String get() = id.ifBlank { _id }
 }
 
+data class VisitedPlaceEntry(
+    val place: Place? = null,
+    val visitedAt: String? = null
+)
+
 data class NotificationItem(
+    val _id: String? = null,
     val title: String = "",
     val message: String = "",
     val read: Boolean = false,

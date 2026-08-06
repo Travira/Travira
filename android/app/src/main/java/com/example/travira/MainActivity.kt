@@ -33,7 +33,13 @@ import com.example.travira.screens.auth.LoginScreen
 import com.example.travira.screens.home.HomeScreen
 import com.example.travira.screens.places.AddPlaceScreen
 import com.example.travira.screens.places.PlaceScreen
+import com.example.travira.screens.profile.ContributionScreen
+import com.example.travira.screens.profile.EditProfileScreen
+import com.example.travira.screens.profile.NotificationsScreen
 import com.example.travira.screens.profile.ProfileScreen
+import com.example.travira.screens.profile.ProfileSection
+import com.example.travira.screens.profile.VisitedPlacesScreen
+import com.example.travira.screens.profile.WishlistScreen
 import com.example.travira.screens.splash.SplashScreen
 import com.example.travira.ui.theme.TraviraTheme
 import kotlinx.coroutines.launch
@@ -48,10 +54,10 @@ class MainActivity : ComponentActivity() {
 
         window.decorView.systemUiVisibility =
             (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        or View.SYSTEM_UI_FLAG_FULLSCREEN
-                )
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    )
 
         setContent {
             TraviraTheme {
@@ -72,12 +78,9 @@ fun TraviraRoot() {
     val tokenManager = remember { TokenManager(context) }
 
     var showSplash by remember { mutableStateOf(true) }
-    // Places fetched during splash so homescreen is ready
     var prefetchedPlaces by remember { mutableStateOf<List<Place>>(emptyList()) }
     var prefetchError by remember { mutableStateOf<String?>(null) }
-    var prefetchDone by remember { mutableStateOf(false) }
 
-    // Start fetching places as soon as app opens (while splash plays)
     LaunchedEffect(Unit) {
         try {
             val response = RetrofitInstance.placeApi.getPlaces()
@@ -86,15 +89,11 @@ fun TraviraRoot() {
         } catch (e: Exception) {
             Log.e("TRAVIRA_API", "Prefetch error: ${e.message}")
             prefetchError = e.message
-        } finally {
-            prefetchDone = true
         }
     }
 
     if (showSplash) {
-        SplashScreen(
-            onFinish = { showSplash = false }
-        )
+        SplashScreen(onFinish = { showSplash = false })
     } else {
         TraviraApp(
             tokenManager = tokenManager,
@@ -126,44 +125,42 @@ fun TraviraApp(
     var showAdmin by remember { mutableStateOf(false) }
     var showAddPlace by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf(PendingAction.NONE) }
+    var profileSection by remember { mutableStateOf<ProfileSection?>(null) }
 
-    // Load user profile if session exists
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
+    fun refreshUser() {
+        scope.launch {
+            if (!tokenManager.isLoggedIn) {
+                currentUser = null
+                return@launch
+            }
             val token = tokenManager.accessToken
-            if (!token.isNullOrBlank()) {
-                try {
-                    val res = RetrofitInstance.authApi.getCurrentUser("Bearer $token")
-                    currentUser = res.user
-                } catch (e: Exception) {
-                    // Try refresh token once
-                    val rt = tokenManager.refreshToken
-                    if (!rt.isNullOrBlank()) {
-                        try {
-                            val refreshed = RetrofitInstance.authApi.refreshToken(RefreshRequest(rt))
-                            tokenManager.accessToken = refreshed.accessToken
-                            val res = RetrofitInstance.authApi.getCurrentUser("Bearer ${refreshed.accessToken}")
-                            currentUser = res.user
-                        } catch (_: Exception) {
-                            tokenManager.clear()
-                            isLoggedIn = false
-                            currentUser = null
-                        }
-                    } else {
+            if (token.isNullOrBlank()) return@launch
+            try {
+                val res = RetrofitInstance.authApi.getCurrentUser("Bearer $token")
+                currentUser = res.user
+            } catch (e: Exception) {
+                val rt = tokenManager.refreshToken
+                if (!rt.isNullOrBlank()) {
+                    try {
+                        val refreshed = RetrofitInstance.authApi.refreshToken(RefreshRequest(rt))
+                        tokenManager.accessToken = refreshed.accessToken
+                        val res = RetrofitInstance.authApi.getCurrentUser("Bearer ${refreshed.accessToken}")
+                        currentUser = res.user
+                    } catch (_: Exception) {
                         tokenManager.clear()
                         isLoggedIn = false
                         currentUser = null
                     }
                 }
             }
-        } else {
-            currentUser = null
         }
     }
 
-    // Fetch / re-fetch places
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) refreshUser() else currentUser = null
+    }
+
     LaunchedEffect(refreshTrigger) {
-        // Skip first run if we already have prefetched data and trigger is 0
         if (refreshTrigger == 0 && placesList.isNotEmpty()) {
             isLoading = false
             return@LaunchedEffect
@@ -209,9 +206,15 @@ fun TraviraApp(
             else -> {}
         }
         pendingAction = PendingAction.NONE
+        refreshUser()
     }
 
-    // ── Screens overlay ─────────────────────────────
+    val wishlistIds = remember(currentUser) {
+        currentUser?.wishlist?.map { it._id }?.toSet() ?: emptySet()
+    }
+    val visitedIds = remember(currentUser) {
+        currentUser?.visitedPlaces?.mapNotNull { it.place?._id }?.toSet() ?: emptySet()
+    }
 
     when {
         showAdmin -> {
@@ -245,6 +248,7 @@ fun TraviraApp(
                 onSubmitted = {
                     showAddPlace = false
                     refreshTrigger++
+                    refreshUser()
                 }
             )
         }
@@ -253,7 +257,71 @@ fun TraviraApp(
             BackHandler { selectedPlace = null }
             PlaceScreen(
                 place = selectedPlace!!,
-                onBackClick = { selectedPlace = null }
+                onBackClick = { selectedPlace = null },
+                tokenManager = tokenManager,
+                isWishlistedInitially = selectedPlace!!._id in wishlistIds,
+                isVisitedInitially = selectedPlace!!._id in visitedIds,
+                onRequireLogin = {
+                    pendingAction = PendingAction.NONE
+                    showLogin = true
+                }
+            )
+        }
+
+        profileSection == ProfileSection.EDIT_PROFILE -> {
+            BackHandler { profileSection = null }
+            EditProfileScreen(
+                tokenManager = tokenManager,
+                user = currentUser,
+                onBack = { profileSection = null },
+                onSaved = { updated ->
+                    currentUser = updated
+                    refreshUser()
+                }
+            )
+        }
+
+        profileSection == ProfileSection.WISHLIST -> {
+            BackHandler { profileSection = null }
+            WishlistScreen(
+                tokenManager = tokenManager,
+                onBack = {
+                    profileSection = null
+                    refreshUser()
+                },
+                onPlaceClick = { selectedPlace = it }
+            )
+        }
+
+        profileSection == ProfileSection.CONTRIBUTION -> {
+            BackHandler { profileSection = null }
+            ContributionScreen(
+                tokenManager = tokenManager,
+                onBack = { profileSection = null },
+                onPlaceClick = { selectedPlace = it }
+            )
+        }
+
+        profileSection == ProfileSection.VISITED -> {
+            BackHandler { profileSection = null }
+            VisitedPlacesScreen(
+                tokenManager = tokenManager,
+                onBack = {
+                    profileSection = null
+                    refreshUser()
+                },
+                onPlaceClick = { selectedPlace = it }
+            )
+        }
+
+        profileSection == ProfileSection.NOTIFICATIONS -> {
+            BackHandler { profileSection = null }
+            NotificationsScreen(
+                tokenManager = tokenManager,
+                onBack = {
+                    profileSection = null
+                    refreshUser()
+                }
             )
         }
 
@@ -268,11 +336,34 @@ fun TraviraApp(
                             onPlaceClick = { selectedPlace = it },
                             onRetry = { refreshTrigger++ },
                             onAddPlaceClick = { requireAuth(PendingAction.ADD_PLACE) },
+                            wishlistIds = wishlistIds,
+                            onToggleWishlist = { place ->
+                                if (!tokenManager.isLoggedIn) {
+                                    requireAuth(PendingAction.WISHLIST)
+                                } else {
+                                    scope.launch {
+                                        try {
+                                            val token = tokenManager.accessToken ?: return@launch
+                                            if (place._id in wishlistIds) {
+                                                RetrofitInstance.placeApi.removeWishlist(
+                                                    "Bearer $token",
+                                                    place._id
+                                                )
+                                            } else {
+                                                RetrofitInstance.placeApi.addWishlist(
+                                                    "Bearer $token",
+                                                    place._id
+                                                )
+                                            }
+                                            refreshUser()
+                                        } catch (_: Exception) { }
+                                    }
+                                }
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                     1 -> {
-                        // AI Screen – require login
                         LaunchedEffect(Unit) {
                             if (!tokenManager.isLoggedIn) {
                                 requireAuth(PendingAction.AI_CHAT)
@@ -314,6 +405,7 @@ fun TraviraApp(
                                     currentUser = null
                                 }
                             },
+                            onSectionClick = { section -> profileSection = section },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -341,7 +433,5 @@ fun TraviraApp(
 @Preview(showBackground = true)
 @Composable
 fun TraviraAppPreview() {
-    TraviraTheme {
-        // Preview only
-    }
+    TraviraTheme { }
 }

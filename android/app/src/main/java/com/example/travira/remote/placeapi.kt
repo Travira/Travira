@@ -5,14 +5,11 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface PlaceApi {
 
-    /**
-     * Current backend: GET /api/place
-     * Response: { "success": true, "data": [ ...places ] }
-     */
     @GET("api/place")
     suspend fun getPlaces(): PlacesResponse
 
@@ -24,6 +21,24 @@ interface PlaceApi {
         @Header("Authorization") bearer: String,
         @Body body: AddPlaceRequest
     ): PlaceResponse
+
+    @PUT("api/place/{id}")
+    suspend fun updatePlace(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: AddPlaceRequest
+    ): PlaceResponse
+
+    @DELETE("api/place/{id}")
+    suspend fun deletePlace(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String
+    ): SimpleMessageResponse
+
+    @GET("api/place/user/my-places")
+    suspend fun getMyPlaces(
+        @Header("Authorization") bearer: String
+    ): MyPlacesResponse
 
     @POST("api/place/{id}/wishlist")
     suspend fun addWishlist(
@@ -40,7 +55,7 @@ interface PlaceApi {
     @GET("api/place/user/wishlist")
     suspend fun getWishlist(
         @Header("Authorization") bearer: String
-    ): SimpleMessageResponse
+    ): WishlistResponse
 
     @POST("api/place/{id}/rating")
     suspend fun ratePlace(

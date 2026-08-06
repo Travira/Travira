@@ -34,6 +34,8 @@ fun HomeScreen(
     onPlaceClick: (Place) -> Unit,
     onRetry: () -> Unit = {},
     onAddPlaceClick: () -> Unit = {},
+    wishlistIds: Set<String> = emptySet(),
+    onToggleWishlist: ((Place) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -108,7 +110,10 @@ fun HomeScreen(
                     ) { place ->
                         AppCard(
                             place = place,
-                            onClick = { onPlaceClick(place) }
+                            onClick = { onPlaceClick(place) },
+                            showWishlistHeart = onToggleWishlist != null,
+                            isWishlisted = place._id in wishlistIds,
+                            onWishlistClick = { onToggleWishlist?.invoke(place) }
                         )
                     }
 
