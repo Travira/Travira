@@ -16,12 +16,12 @@ const User = require("./models/user");
 
 async function seedMainAdmin() {
   try {
-    const email = "preet@travira.app";
+    const email = process.env.ROOT_ADMIN_EMAIL;
     let user = await User.findOne({ email });
     if (!user) {
-      const hashed = await bcrypt.hash("1234", 10);
+      const hashed = await bcrypt.hash(process.env.ROOT_ADMIN_PASSWORD, 10);
       user = await User.create({
-        name: "Preet",
+        name: process.env.ROOT_ADMIN_NAME,
         email,
         password: hashed,
         role: "superadmin",

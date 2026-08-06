@@ -744,7 +744,7 @@ private fun AdminAdminsTab(tokenManager: TokenManager) {
                                 else -> Color.Gray
                             }
                         )
-                        if (admin.role != "superadmin" && admin.email != "preet@travira.app") {
+                        if (admin.role != "superadmin") {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.padding(top = 8.dp)

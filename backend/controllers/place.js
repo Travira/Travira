@@ -1,6 +1,6 @@
 const Place = require("../models/place");
 const User = require("../models/user");
-
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 
 // ================= Get Approved Places =================
@@ -97,7 +97,7 @@ exports.addPlace = async (req, res) => {
       actor &&
       (actor.role === "admin" ||
         actor.role === "superadmin" ||
-        actor.email === "preet@travira.app");
+        actor.email === process.env.ROOT_ADMIN_EMAIL);
 
     const place = new Place({
       ...req.body,

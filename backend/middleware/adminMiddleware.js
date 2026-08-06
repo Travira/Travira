@@ -1,4 +1,5 @@
 const User = require("../models/user");
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 /**
  * Allows role: admin or superadmin.
@@ -14,7 +15,7 @@ const adminMiddleware = async (req, res, next) => {
     const isAdmin =
       user.role === "admin" ||
       user.role === "superadmin" ||
-      user.email === "preet@travira.app";
+      user.email === process.env.ROOT_ADMIN_EMAIL;
 
     if (!isAdmin) {
       return res.status(403).json({ message: "Access denied. Admin only." });
@@ -24,7 +25,7 @@ const adminMiddleware = async (req, res, next) => {
     if (
       user.role === "admin" &&
       user.adminStatus === "pending" &&
-      user.email !== "preet@travira.app"
+      user.email !== process.env.ROOT_ADMIN_EMAIL
     ) {
       return res.status(403).json({
         message: "Your admin account is pending approval by the main admin."

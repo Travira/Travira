@@ -1,11 +1,12 @@
 const Place = require("../models/place");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
 // ── Helpers ──────────────────────────────────────────
 
 function isSuperAdmin(user) {
-  return user && (user.role === "superadmin" || user.email === "preet@travira.app");
+  return user && (user.role === "superadmin" || user.email === process.env.ROOT_ADMIN_EMAIL);
 }
 
 async function notifyUser(userId, title, message) {
@@ -304,7 +305,7 @@ exports.adminUpdateUser = async (req, res) => {
   try {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "User not found" });
-    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+    if (target.role === "superadmin" || target.email === process.env.ROOT_ADMIN_EMAIL) {
       return res.status(403).json({ message: "Cannot modify main admin account" });
     }
 
@@ -352,7 +353,7 @@ exports.adminDeleteUser = async (req, res) => {
   try {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "User not found" });
-    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+    if (target.role === "superadmin" || target.email === process.env.ROOT_ADMIN_EMAIL) {
       return res.status(403).json({ message: "Cannot delete main admin" });
     }
     if (target._id.toString() === req.user.id) {
@@ -402,7 +403,7 @@ exports.setAdminStatus = async (req, res) => {
 
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "User not found" });
-    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+    if (target.role === "superadmin" || target.email === process.env.ROOT_ADMIN_EMAIL) {
       return res.status(403).json({ message: "Cannot change main admin" });
     }
 
@@ -453,7 +454,7 @@ exports.deleteAdmin = async (req, res) => {
     }
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "User not found" });
-    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+    if (target.role === "superadmin" || target.email === process.env.ROOT_ADMIN_EMAIL) {
       return res.status(403).json({ message: "Cannot delete main admin" });
     }
 

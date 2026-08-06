@@ -46,7 +46,7 @@ class TokenManager(context: Context) {
         }
 
     val isSuperAdmin: Boolean
-        get() = userRole == "superadmin" || userEmail == "preet@travira.app"
+        get() = userRole == "superadmin"
 
     fun saveSession(
         accessToken: String,
