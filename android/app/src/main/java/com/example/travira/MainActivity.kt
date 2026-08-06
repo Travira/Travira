@@ -32,6 +32,7 @@ import com.example.travira.screens.admin.AdminDashboardScreen
 import com.example.travira.screens.auth.LoginScreen
 import com.example.travira.screens.home.HomeScreen
 import com.example.travira.screens.places.AddPlaceScreen
+import com.example.travira.screens.places.EditPlaceScreen
 import com.example.travira.screens.places.PlaceScreen
 import com.example.travira.screens.profile.ContributionScreen
 import com.example.travira.screens.profile.EditProfileScreen
@@ -124,6 +125,7 @@ fun TraviraApp(
     var showLogin by remember { mutableStateOf(false) }
     var showAdmin by remember { mutableStateOf(false) }
     var showAddPlace by remember { mutableStateOf(false) }
+    var editingPlace by remember { mutableStateOf<Place?>(null) }
     var pendingAction by remember { mutableStateOf(PendingAction.NONE) }
     var profileSection by remember { mutableStateOf<ProfileSection?>(null) }
 
@@ -253,6 +255,27 @@ fun TraviraApp(
             )
         }
 
+        editingPlace != null -> {
+            val placeBeingEdited = editingPlace!!
+            val ownerId = placeBeingEdited.addedById
+            val isOwner =
+                !ownerId.isNullOrBlank() && ownerId == (currentUser?.userId ?: tokenManager.userId)
+            val isAdminEdit = tokenManager.isAdmin && !isOwner
+            BackHandler { editingPlace = null }
+            EditPlaceScreen(
+                place = placeBeingEdited,
+                tokenManager = tokenManager,
+                isAdminEdit = isAdminEdit,
+                onBack = { editingPlace = null },
+                onSaved = { updated ->
+                    editingPlace = null
+                    selectedPlace = updated
+                    refreshTrigger++
+                    refreshUser()
+                }
+            )
+        }
+
         selectedPlace != null -> {
             BackHandler { selectedPlace = null }
             PlaceScreen(
@@ -264,7 +287,16 @@ fun TraviraApp(
                 onRequireLogin = {
                     pendingAction = PendingAction.NONE
                     showLogin = true
-                }
+                },
+                onEditClick = { place ->
+                    editingPlace = place
+                },
+                onDeleted = {
+                    selectedPlace = null
+                    refreshTrigger++
+                    refreshUser()
+                },
+                currentUserId = currentUser?.userId ?: tokenManager.userId
             )
         }
 

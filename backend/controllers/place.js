@@ -159,21 +159,13 @@ exports.getMyPlaces = async(req,res)=>{
 try{
 
 
-const places =
-await Place.find({
-
-addedBy:req.user.id
-
-});
-
-
+const places = await Place.find({
+  addedBy: req.user.id
+}).populate("addedBy", "name email");
 
 res.json({
-
-success:true,
-
-places
-
+  success: true,
+  places
 });
 
 
@@ -197,93 +189,62 @@ message:error.message
 
 
 
-// ================= Update Place =================
+// ================= Update Place (owner) =================
+// When the owner edits, place goes back to pending and all admins get a notification.
 
+exports.updatePlace = async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
 
-exports.updatePlace = async(req,res)=>{
+    if (!place) {
+      return res.status(404).json({ message: "Place not found" });
+    }
 
-try{
+    if (place.addedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You cannot update this place" });
+    }
 
+    const feedbackNote =
+      typeof req.body.editNote === "string" ? req.body.editNote.trim() : "";
 
-const place =
-await Place.findById(req.params.id);
+    const { editNote, ...fields } = req.body;
 
+    const updated = await Place.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...fields,
+        approvalStatus: "pending",
+        adminFeedback: feedbackNote || ""
+      },
+      { new: true }
+    ).populate("addedBy", "name email");
 
+    // Notify all admins / superadmins that a user edited a place
+    const admins = await User.find({
+      role: { $in: ["admin", "superadmin"] }
+    }).select("_id");
 
-if(!place){
+    const title = "Place edited by user";
+    const message = feedbackNote
+      ? `${req.user.name || "A user"} edited "${place.name}". Note: ${feedbackNote}`
+      : `${req.user.name || "A user"} edited "${place.name}" and resubmitted it for review.`;
 
-return res.status(404).json({
+    await Promise.all(
+      admins.map((a) =>
+        User.findByIdAndUpdate(a._id, {
+          $push: { notifications: { title, message } }
+        })
+      )
+    );
 
-message:"Place not found"
-
-});
-
-}
-
-
-
-if(
-place.addedBy.toString()
-!== req.user.id
-){
-
-return res.status(403).json({
-
-message:"You cannot update this place"
-
-});
-
-}
-
-
-
-const updated =
-await Place.findByIdAndUpdate(
-
-req.params.id,
-
-{
-
-...req.body,
-
-approvalStatus:"pending",
-
-adminFeedback:""
-
-},
-
-{
-
-new:true
-
-}
-
-);
-
-
-
-res.json({
-
-success:true,
-
-message:"Place updated and sent for review",
-
-place:updated
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+    res.json({
+      success: true,
+      message: "Place updated and sent for review",
+      place: updated
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 

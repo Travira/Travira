@@ -26,7 +26,9 @@ data class AddPlaceRequest(
     val state: String? = null,
     val country: String? = null,
     val location: String? = null,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    /** Optional note sent with an edit (user → admin or admin → user). */
+    val editNote: String? = null
 )
 
 data class WishlistResponse(

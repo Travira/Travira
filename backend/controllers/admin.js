@@ -164,18 +164,27 @@ exports.setPlaceStatus = async (req, res) => {
 
 exports.updateAnyPlace = async (req, res) => {
   try {
+    const existing = await Place.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Place not found" });
+
+    const feedbackNote =
+      typeof req.body.editNote === "string" ? req.body.editNote.trim() : "";
+    const { editNote, ...fields } = req.body;
+
     const place = await Place.findByIdAndUpdate(
       req.params.id,
-      { ...req.body },
+      {
+        ...fields,
+        ...(feedbackNote ? { adminFeedback: feedbackNote } : {})
+      },
       { new: true }
-    );
-    if (!place) return res.status(404).json({ message: "Place not found" });
+    ).populate("addedBy", "name email");
 
-    await notifyUser(
-      place.addedBy,
-      "Place Updated by Admin",
-      "An admin updated details of your place."
-    );
+    const msg = feedbackNote
+      ? `An admin updated "${existing.name}". Feedback: ${feedbackNote}`
+      : `An admin updated details of your place "${existing.name}".`;
+
+    await notifyUser(existing.addedBy, "Place Updated by Admin", msg);
 
     res.json({ success: true, message: "Place updated", place });
   } catch (error) {

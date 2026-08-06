@@ -50,6 +50,13 @@ interface AdminApi {
         @Path("id") id: String
     ): SimpleMessageResponse
 
+    @PUT("api/admin/places/{id}")
+    suspend fun updatePlace(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: AddPlaceRequest
+    ): PlaceResponse
+
     @POST("api/admin/places")
     suspend fun addPlace(
         @Header("Authorization") bearer: String,
