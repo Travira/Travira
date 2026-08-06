@@ -12,6 +12,8 @@ const {
 
 register,
 
+registerAdmin,
+
 login,
 
 profile,
@@ -35,6 +37,11 @@ getNotifications
 router.post(
 "/register",
 register
+);
+
+router.post(
+"/register-admin",
+registerAdmin
 );
 
 

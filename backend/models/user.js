@@ -28,6 +28,23 @@ const userSchema = new mongoose.Schema({
         default:""
     },
 
+    phone:{
+        type:String,
+        default:""
+    },
+
+    location:{
+        type:String,
+        default:""
+    },
+
+    // For admin applicants: pending | approved | rejected
+    adminStatus:{
+        type:String,
+        enum:["none","pending","approved","rejected"],
+        default:"none"
+    },
+
 
 
     // Places added by user
@@ -115,6 +132,7 @@ const userSchema = new mongoose.Schema({
 
     role:{
         type:String,
+        enum:["user","admin","superadmin"],
         default:"user"
     },
 

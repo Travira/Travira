@@ -173,7 +173,7 @@ fun PlaceScreen(
             )
 
             Text(
-                text = place.shortDescription.toString(),
+                text = place.shortDescription ?: "",
                 fontSize = 15.sp,
                 lineHeight = 24.sp,
                 color = Color.DarkGray
@@ -219,7 +219,7 @@ fun PlaceScreen(
                     )
 
                     Text(
-                        text = place.location.toString(),
+                        text = place.location ?: "",
                         fontSize = 15.sp,
                         color = Color.DarkGray
                     )

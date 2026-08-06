@@ -10,6 +10,40 @@ const placeRoutes = require("./routes/placeroute");
 const userRoutes = require("./routes/user");
 const adminRoutes = require("./routes/adminRoutes");
 
+const bcrypt = require("bcrypt");
+const User = require("./models/user");
+
+async function seedMainAdmin() {
+  try {
+    const email = "preet@travira.app";
+    let user = await User.findOne({ email });
+    if (!user) {
+      const hashed = await bcrypt.hash("1234", 10);
+      user = await User.create({
+        name: "Preet",
+        email,
+        password: hashed,
+        role: "superadmin",
+        adminStatus: "approved",
+        location: "India",
+        phone: ""
+      });
+      console.log("✅ Main admin created: preet@travira.app / 1234");
+    } else {
+      // Ensure superadmin role
+      if (user.role !== "superadmin") {
+        user.role = "superadmin";
+        user.adminStatus = "approved";
+        await user.save();
+        console.log("✅ Main admin role upgraded to superadmin");
+      }
+    }
+  } catch (e) {
+    console.error("seedMainAdmin error:", e.message);
+  }
+}
+
+
 // DNS servers (helps with some Atlas SRV resolution issues when testing locally)
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
@@ -56,6 +90,7 @@ const startServer = async () => {
     }
 
     await connectDB();
+    await seedMainAdmin();
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
   } catch (error) {

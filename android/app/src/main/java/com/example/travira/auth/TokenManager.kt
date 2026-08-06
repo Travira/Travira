@@ -32,15 +32,29 @@ class TokenManager(context: Context) {
         get() = prefs.getString(KEY_USER_EMAIL, null)
         set(value) = prefs.edit().putString(KEY_USER_EMAIL, value).apply()
 
+    var userRole: String?
+        get() = prefs.getString(KEY_USER_ROLE, null)
+        set(value) = prefs.edit().putString(KEY_USER_ROLE, value).apply()
+
     val isLoggedIn: Boolean
         get() = !accessToken.isNullOrBlank() || !refreshToken.isNullOrBlank()
+
+    val isAdmin: Boolean
+        get() {
+            val r = userRole ?: return false
+            return r == "admin" || r == "superadmin"
+        }
+
+    val isSuperAdmin: Boolean
+        get() = userRole == "superadmin" || userEmail == "preet@travira.app"
 
     fun saveSession(
         accessToken: String,
         refreshToken: String,
         userId: String,
         name: String,
-        email: String
+        email: String,
+        role: String = "user"
     ) {
         prefs.edit()
             .putString(KEY_ACCESS, accessToken)
@@ -48,6 +62,7 @@ class TokenManager(context: Context) {
             .putString(KEY_USER_ID, userId)
             .putString(KEY_USER_NAME, name)
             .putString(KEY_USER_EMAIL, email)
+            .putString(KEY_USER_ROLE, role)
             .apply()
     }
 
@@ -62,5 +77,6 @@ class TokenManager(context: Context) {
         private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
+        private const val KEY_USER_ROLE = "user_role"
     }
 }

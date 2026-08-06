@@ -1,6 +1,5 @@
 package com.example.travira.model
 
-
 /**
  * Matches the live API response from GET /api/places
  * (raw JSON array with rating field).
@@ -19,7 +18,9 @@ data class Place(
     val rating: Double = 0.0,
     val averageRating: Double = 0.0,
     val visitorsCount: Int = 0,
-    val approvalStatus: String? = null
+    val approvalStatus: String? = null,
+    val adminFeedback: String? = null,
+    val createdAt: String? = null
 ) {
     /** Prefer live `rating`, fall back to averageRating */
     val displayRating: Double

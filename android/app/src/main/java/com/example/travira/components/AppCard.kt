@@ -97,7 +97,7 @@ fun AppCard(
                 )
 
                 Text(
-                    text = "${place.city}, ${place.state}",
+                    text = listOfNotNull(place.city, place.state).joinToString(", ").ifBlank { place.country ?: "" },
                     color = Color.White.copy(alpha = 0.90f),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium

@@ -28,6 +28,7 @@ import com.example.travira.model.Place
 import com.example.travira.model.User
 import com.example.travira.remote.RefreshRequest
 import com.example.travira.remote.RetrofitInstance
+import com.example.travira.screens.admin.AdminDashboardScreen
 import com.example.travira.screens.auth.LoginScreen
 import com.example.travira.screens.home.HomeScreen
 import com.example.travira.screens.places.AddPlaceScreen
@@ -47,10 +48,10 @@ class MainActivity : ComponentActivity() {
 
         window.decorView.systemUiVisibility =
             (
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    )
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                )
 
         setContent {
             TraviraTheme {
@@ -122,6 +123,7 @@ fun TraviraApp(
     var currentUser by remember { mutableStateOf<User?>(null) }
 
     var showLogin by remember { mutableStateOf(false) }
+    var showAdmin by remember { mutableStateOf(false) }
     var showAddPlace by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf(PendingAction.NONE) }
 
@@ -196,6 +198,11 @@ fun TraviraApp(
     fun onLoginSuccess() {
         isLoggedIn = true
         showLogin = false
+        if (tokenManager.isAdmin) {
+            showAdmin = true
+            pendingAction = PendingAction.NONE
+            return
+        }
         when (pendingAction) {
             PendingAction.ADD_PLACE -> showAddPlace = true
             PendingAction.AI_CHAT -> selectedIndex = 1
@@ -207,6 +214,14 @@ fun TraviraApp(
     // ── Screens overlay ─────────────────────────────
 
     when {
+        showAdmin -> {
+            BackHandler { showAdmin = false }
+            AdminDashboardScreen(
+                tokenManager = tokenManager,
+                onBack = { showAdmin = false }
+            )
+        }
+
         showLogin -> {
             BackHandler {
                 showLogin = false

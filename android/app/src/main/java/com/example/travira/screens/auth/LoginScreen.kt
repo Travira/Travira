@@ -26,6 +26,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +61,9 @@ fun LoginScreen(
     modifier: Modifier = Modifier
 ) {
     var isRegister by remember { mutableStateOf(false) }
+    var isAdminRegister by remember { mutableStateOf(false) }
+    var phone by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -105,12 +110,24 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = if (isRegister) "Create your account" else "Welcome back",
+                text = when {
+                isAdminRegister -> "Apply for Admin access"
+                isRegister -> "Create your account"
+                else -> "Welcome back"
+            },
                 fontSize = 15.sp,
                 color = Color.White.copy(alpha = 0.85f)
             )
 
             Spacer(modifier = Modifier.height(36.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                tonalElevation = 4.dp
+            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
 
             if (isRegister) {
                 OutlinedTextField(
@@ -120,7 +137,18 @@ fun LoginScreen(
                     leadingIcon = { Icon(Icons.Default.Person, null) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF1A1A1A),
+                        unfocusedTextColor = Color(0xFF1A1A1A),
+                        focusedLabelColor = Color(0xFF1565C0),
+                        unfocusedLabelColor = Color(0xFF757575),
+                        cursorColor = Color(0xFF1565C0),
+                        focusedBorderColor = Color(0xFF1565C0),
+                        unfocusedBorderColor = Color(0xFFBDBDBD),
+                        focusedLeadingIconColor = Color(0xFF1565C0),
+                        unfocusedLeadingIconColor = Color(0xFF757575)
+                    )
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -168,6 +196,9 @@ fun LoginScreen(
                 )
             }
 
+            } // Column inside Surface
+            } // Surface
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
@@ -180,11 +211,25 @@ fun LoginScreen(
                     error = null
                     scope.launch {
                         try {
-                            if (isRegister) {
-                                val reg = RetrofitInstance.authApi.register(
+                            if (isRegister && isAdminRegister) {
+                                RetrofitInstance.authApi.registerAdmin(
+                                    com.example.travira.remote.RegisterAdminRequest(
+                                        name = name.trim(),
+                                        email = email.trim(),
+                                        password = password,
+                                        phone = phone.trim().ifBlank { null },
+                                        location = location.trim().ifBlank { null }
+                                    )
+                                )
+                                error = null
+                                // Don't auto-login pending admins
+                                isRegister = false
+                                isAdminRegister = false
+                                throw Exception("Admin application submitted. Wait for Preet to approve, then login.")
+                            } else if (isRegister) {
+                                RetrofitInstance.authApi.register(
                                     RegisterRequest(name.trim(), email.trim(), password)
                                 )
-                                // Auto-login after register
                                 val login = RetrofitInstance.authApi.login(
                                     LoginRequest(email.trim(), password)
                                 )
@@ -194,7 +239,8 @@ fun LoginScreen(
                                     refreshToken = login.refreshToken,
                                     userId = u?.id ?: u?._id ?: "",
                                     name = u?.name ?: name.trim(),
-                                    email = u?.email ?: email.trim()
+                                    email = u?.email ?: email.trim(),
+                                    role = u?.role ?: "user"
                                 )
                             } else {
                                 val login = RetrofitInstance.authApi.login(
@@ -206,7 +252,8 @@ fun LoginScreen(
                                     refreshToken = login.refreshToken,
                                     userId = u?.id ?: u?._id ?: "",
                                     name = u?.name ?: "",
-                                    email = u?.email ?: email.trim()
+                                    email = u?.email ?: email.trim(),
+                                    role = u?.role ?: "user"
                                 )
                             }
                             onLoginSuccess()
@@ -243,12 +290,25 @@ fun LoginScreen(
 
             TextButton(onClick = {
                 isRegister = !isRegister
+                isAdminRegister = false
                 error = null
             }) {
                 Text(
                     text = if (isRegister) "Already have an account? Login"
                     else "New here? Create account",
                     color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+
+            TextButton(onClick = {
+                isRegister = true
+                isAdminRegister = !isAdminRegister
+                error = null
+            }) {
+                Text(
+                    text = if (isAdminRegister) "Switch to normal Sign up"
+                    else "Apply as Admin",
+                    color = Color(0xFFB2EBF2)
                 )
             }
 

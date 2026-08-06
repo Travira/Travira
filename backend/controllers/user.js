@@ -10,6 +10,11 @@ const jwt = require("jsonwebtoken");
 
 const generateAccessToken = (user)=>{
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error("JWT_SECRET is not set. Add it in Render Environment variables.");
+    }
+
     return jwt.sign(
 
         {
@@ -17,7 +22,7 @@ const generateAccessToken = (user)=>{
             email:user.email
         },
 
-        process.env.JWT_SECRET,
+        secret,
 
         {
             expiresIn:"15m"
@@ -35,13 +40,18 @@ const generateAccessToken = (user)=>{
 
 const generateRefreshToken = (user)=>{
 
+    const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error("JWT_REFRESH_SECRET (or JWT_SECRET) is not set. Add it in Render Environment variables.");
+    }
+
     return jwt.sign(
 
         {
             userId:user._id
         },
 
-        process.env.JWT_REFRESH_SECRET,
+        secret,
 
         {
             expiresIn:"30d"
@@ -245,7 +255,13 @@ name:user.name,
 
 email:user.email,
 
-role:user.role
+role:user.role,
+
+adminStatus:user.adminStatus || "none",
+
+phone:user.phone || "",
+
+location:user.location || ""
 
 }
 
@@ -634,4 +650,44 @@ message:error.message
 
 }
 
+};
+
+// ================= Register as Admin (pending until Preet approves) =================
+
+exports.registerAdmin = async (req, res) => {
+  try {
+    const { name, email, password, phone, location } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "name, email, password required" });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      phone: phone || "",
+      location: location || "",
+      role: "admin",
+      adminStatus: "pending"
+    });
+
+    res.json({
+      message: "Admin registration submitted. Wait for main admin (Preet) approval.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        adminStatus: user.adminStatus
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

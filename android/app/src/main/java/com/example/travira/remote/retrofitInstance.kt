@@ -33,6 +33,7 @@ object RetrofitInstance {
 
     val placeApi: PlaceApi by lazy { retrofit.create(PlaceApi::class.java) }
     val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
+    val adminApi: AdminApi by lazy { retrofit.create(AdminApi::class.java) }
 
     /** @deprecated use placeApi */
     val api: PlaceApi get() = placeApi

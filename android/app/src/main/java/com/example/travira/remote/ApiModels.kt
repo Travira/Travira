@@ -46,7 +46,10 @@ data class AuthUserDto(
     val _id: String? = null,
     val name: String = "",
     val email: String = "",
-    val role: String = "user"
+    val role: String = "user",
+    val adminStatus: String? = "none",
+    val phone: String? = null,
+    val location: String? = null
 )
 
 data class LoginResponse(

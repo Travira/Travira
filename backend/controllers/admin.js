@@ -1,392 +1,355 @@
 const Place = require("../models/place");
 const User = require("../models/user");
+const bcrypt = require("bcrypt");
 
+// ── Helpers ──────────────────────────────────────────
 
-
-
-// ================= Get Pending Places =================
-
-
-exports.getPendingPlaces = async(req,res)=>{
-
-try{
-
-
-const places =
-await Place.find({
-
-approvalStatus:"pending"
-
-})
-.populate(
-"addedBy",
-"name email"
-);
-
-
-
-res.json({
-
-success:true,
-
-places
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
+function isSuperAdmin(user) {
+  return user && (user.role === "superadmin" || user.email === "preet@travira.app");
 }
 
+async function notifyUser(userId, title, message) {
+  if (!userId) return;
+  await User.findByIdAndUpdate(userId, {
+    $push: { notifications: { title, message } }
+  });
+}
+
+// ================= All places (admin) =================
+
+exports.getAllPlaces = async (req, res) => {
+  try {
+    const { status } = req.query; // pending | approved | rejected | all
+    const filter = {};
+    if (status && status !== "all") filter.approvalStatus = status;
+
+    const places = await Place.find(filter)
+      .populate("addedBy", "name email phone location")
+      .populate("reviewedBy", "name email")
+      .sort({ createdAt: -1 });
+
+    const counts = {
+      pending: await Place.countDocuments({ approvalStatus: "pending" }),
+      approved: await Place.countDocuments({ approvalStatus: "approved" }),
+      rejected: await Place.countDocuments({ approvalStatus: "rejected" }),
+      total: await Place.countDocuments({})
+    };
+
+    res.json({ success: true, places, counts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-
-
-
-
-
-
-
-
-// ================= Approve Place =================
-
-
-exports.approvePlace = async(req,res)=>{
-
-try{
-
-
-const {
-message
-}=req.body;
-
-
-
-const place =
-await Place.findById(req.params.id);
-
-
-
-if(!place){
-
-return res.status(404).json({
-
-message:"Place not found"
-
-});
-
-}
-
-
-
-
-place.approvalStatus="approved";
-
-
-place.reviewedBy=req.user.id;
-
-
-place.reviewedAt=new Date();
-
-
-place.adminFeedback =
-message || "Place approved";
-
-
-
-await place.save();
-
-
-
-
-
-
-// Send notification to user
-
-await User.findByIdAndUpdate(
-
-place.addedBy,
-
-{
-
-$push:{
-
-notifications:{
-
-title:"Place Approved",
-
-message:
-message ||
-"Your place has been approved and is now visible."
-
-}
-
-}
-
-}
-
-);
-
-
-
-
-
-res.json({
-
-success:true,
-
-message:"Place approved successfully",
-
-place
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+exports.getPlaceAdminDetail = async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id)
+      .populate("addedBy", "name email phone location role")
+      .populate("reviewedBy", "name email")
+      .populate("ratings.user", "name email");
+
+    if (!place) return res.status(404).json({ message: "Place not found" });
+
+    // How many users wishlisted this place
+    const wishlistCount = await User.countDocuments({ wishlist: place._id });
+
+    res.json({
+      success: true,
+      place,
+      stats: {
+        visitorsCount: place.visitorsCount || 0,
+        averageRating: place.averageRating || place.rating || 0,
+        ratingsCount: (place.ratings || []).length,
+        wishlistCount
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-
-
-
-
-
-
-
-
-// ================= Reject Place =================
-
-
-exports.rejectPlace = async(req,res)=>{
-
-try{
-
-
-const {
-feedback
-}=req.body;
-
-
-
-if(!feedback){
-
-return res.status(400).json({
-
-message:"Feedback is required"
-
-});
-
-}
-
-
-
-const place =
-await Place.findById(req.params.id);
-
-
-
-if(!place){
-
-return res.status(404).json({
-
-message:"Place not found"
-
-});
-
-}
-
-
-
-
-place.approvalStatus="rejected";
-
-
-place.adminFeedback=feedback;
-
-
-place.reviewedBy=req.user.id;
-
-
-place.reviewedAt=new Date();
-
-
-
-await place.save();
-
-
-
-
-
-
-
-// Notify User
-
-await User.findByIdAndUpdate(
-
-place.addedBy,
-
-{
-
-$push:{
-
-notifications:{
-
-title:"Place Rejected",
-
-message:feedback
-
-}
-
-}
-
-}
-
-);
-
-
-
-
-
-res.json({
-
-success:true,
-
-message:"Place rejected",
-
-place
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+exports.getPendingPlaces = async (req, res) => {
+  try {
+    const places = await Place.find({ approvalStatus: "pending" })
+      .populate("addedBy", "name email")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, places });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+exports.approvePlace = async (req, res) => {
+  try {
+    const { message } = req.body;
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ message: "Place not found" });
 
+    place.approvalStatus = "approved";
+    place.reviewedBy = req.user.id;
+    place.reviewedAt = new Date();
+    place.adminFeedback = message || "Place approved";
+    await place.save();
 
+    await notifyUser(
+      place.addedBy,
+      "Place Approved",
+      message || "Your place has been approved and is now visible on Travira."
+    );
 
-
-
-
-
-
-// ================= Get All Users =================
-
-
-exports.getUsers = async(req,res)=>{
-
-try{
-
-
-const users =
-await User.find()
-
-.select("-password -refreshTokens");
-
-
-
-res.json({
-
-success:true,
-
-users
-
-});
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+    res.json({ success: true, message: "Place approved successfully", place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+exports.rejectPlace = async (req, res) => {
+  try {
+    const { feedback, message } = req.body;
+    const text = feedback || message;
+    if (!text) return res.status(400).json({ message: "Feedback is required" });
 
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ message: "Place not found" });
 
+    place.approvalStatus = "rejected";
+    place.adminFeedback = text;
+    place.reviewedBy = req.user.id;
+    place.reviewedAt = new Date();
+    await place.save();
 
+    await notifyUser(place.addedBy, "Place Rejected", text);
 
+    res.json({ success: true, message: "Place rejected", place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+/** Set status: pending | approved | rejected (with optional feedback) */
+exports.setPlaceStatus = async (req, res) => {
+  try {
+    const { status, feedback, message } = req.body;
+    const allowed = ["pending", "approved", "rejected"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
 
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ message: "Place not found" });
 
+    place.approvalStatus = status;
+    place.reviewedBy = req.user.id;
+    place.reviewedAt = new Date();
+    if (feedback || message) place.adminFeedback = feedback || message;
+    await place.save();
 
-// ================= Delete Any Place =================
+    const title =
+      status === "approved"
+        ? "Place Approved"
+        : status === "rejected"
+        ? "Place Rejected"
+        : "Place Status Updated";
+    const msg =
+      place.adminFeedback ||
+      `Your place status was changed to ${status} by admin.`;
 
+    await notifyUser(place.addedBy, title, msg);
 
-exports.deleteAnyPlace = async(req,res)=>{
+    res.json({ success: true, message: `Place set to ${status}`, place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-try{
+exports.updateAnyPlace = async (req, res) => {
+  try {
+    const place = await Place.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body },
+      { new: true }
+    );
+    if (!place) return res.status(404).json({ message: "Place not found" });
 
+    await notifyUser(
+      place.addedBy,
+      "Place Updated by Admin",
+      "An admin updated details of your place."
+    );
 
-const place =
-await Place.findById(req.params.id);
+    res.json({ success: true, message: "Place updated", place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+exports.deleteAnyPlace = async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) return res.status(404).json({ message: "Place not found" });
 
+    await Place.findByIdAndDelete(req.params.id);
+    await notifyUser(
+      place.addedBy,
+      "Place Removed",
+      "Your place was removed by an admin."
+    );
 
-if(!place){
+    res.json({ success: true, message: "Place removed by admin" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-return res.status(404).json({
+exports.adminAddPlace = async (req, res) => {
+  try {
+    const place = new Place({
+      ...req.body,
+      addedBy: req.user.id,
+      approvalStatus: "approved", // admin-added places go live
+      reviewedBy: req.user.id,
+      reviewedAt: new Date()
+    });
+    await place.save();
+    await User.findByIdAndUpdate(req.user.id, {
+      $push: { addedPlaces: place._id }
+    });
+    res.json({ success: true, message: "Place added", place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-message:"Place not found"
+// ================= Users =================
 
-});
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find({ role: { $in: ["user", "admin"] } })
+      .select("-password -refreshTokens")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-}
+exports.getUserDetail = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("-password -refreshTokens")
+      .populate("wishlist", "name city imageUrl averageRating rating")
+      .populate("addedPlaces", "name city approvalStatus imageUrl")
+      .populate("visitedPlaces.place", "name city imageUrl");
 
+    if (!user) return res.status(404).json({ message: "User not found" });
 
+    res.json({
+      success: true,
+      user,
+      // Password is hashed – never return plain text
+      passwordNote: "Password is hashed and cannot be viewed. Use reset if needed."
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-await Place.findByIdAndDelete(req.params.id);
+exports.adminCreateUser = async (req, res) => {
+  try {
+    const { name, email, password, phone, location, role } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "name, email, password required" });
+    }
 
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ message: "User already exists" });
 
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      phone: phone || "",
+      location: location || "",
+      role: role === "admin" ? "admin" : "user",
+      adminStatus: role === "admin" ? "approved" : "none"
+    });
 
-res.json({
+    res.json({
+      success: true,
+      message: "User created",
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-success:true,
+// ================= Admin applications (superadmin only) =================
 
-message:"Place removed by admin"
+exports.getAdmins = async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id);
+    if (!isSuperAdmin(me)) {
+      return res.status(403).json({ message: "Only main admin (Preet) can view admins" });
+    }
 
-});
+    const admins = await User.find({
+      $or: [{ role: "admin" }, { role: "superadmin" }, { adminStatus: { $ne: "none" } }]
+    })
+      .select("-password -refreshTokens")
+      .sort({ createdAt: -1 });
 
+    res.json({ success: true, admins });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+exports.setAdminStatus = async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id);
+    if (!isSuperAdmin(me)) {
+      return res.status(403).json({ message: "Only main admin (Preet) can manage admins" });
+    }
 
-}catch(error){
+    const { status } = req.body; // pending | approved | rejected
+    const allowed = ["pending", "approved", "rejected"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
 
-res.status(500).json({
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: "User not found" });
+    if (target.role === "superadmin") {
+      return res.status(403).json({ message: "Cannot change main admin" });
+    }
 
-message:error.message
+    target.adminStatus = status;
+    if (status === "approved") target.role = "admin";
+    if (status === "rejected") target.role = "user";
+    await target.save();
 
-});
+    await notifyUser(
+      target._id,
+      status === "approved" ? "Admin Access Approved" : "Admin Access Update",
+      status === "approved"
+        ? "You are now an admin on Travira."
+        : `Your admin application status: ${status}`
+    );
 
-}
-
+    res.json({
+      success: true,
+      message: `Admin status set to ${status}`,
+      user: {
+        id: target._id,
+        name: target.name,
+        email: target.email,
+        role: target.role,
+        adminStatus: target.adminStatus
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

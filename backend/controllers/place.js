@@ -10,10 +10,10 @@ exports.getPlaces = async(req,res)=>{
 try{
 
 
-// Exclude pending/rejected only. Matches missing approvalStatus (legacy docs).
+// User home: only APPROVED places
 const places =
 await Place.find({
-    approvalStatus: { $nin: ["pending", "rejected"] }
+    approvalStatus: "approved"
 })
 .populate(
 "addedBy",
