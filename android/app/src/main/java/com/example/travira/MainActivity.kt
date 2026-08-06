@@ -245,6 +245,7 @@ fun TraviraApp(
                 onBack = { showAddPlace = false },
                 onSubmitted = {
                     showAddPlace = false
+                    selectedIndex = 0
                     refreshTrigger++
                     refreshUser()
                 }
@@ -304,6 +305,8 @@ fun TraviraApp(
                 onBack = { profileSection = null },
                 onSaved = { updated ->
                     currentUser = updated
+                    profileSection = null
+                    selectedIndex = 2
                     refreshUser()
                 }
             )

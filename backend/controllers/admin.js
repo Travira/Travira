@@ -223,7 +223,11 @@ exports.adminAddPlace = async (req, res) => {
     await User.findByIdAndUpdate(req.user.id, {
       $push: { addedPlaces: place._id }
     });
-    res.json({ success: true, message: "Place added", place });
+    const populated = await Place.findById(place._id).populate(
+      "addedBy",
+      "name email"
+    );
+    res.json({ success: true, message: "Place added", place: populated });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -233,8 +237,9 @@ exports.adminAddPlace = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
+    // Omit array refs so clients don't get raw ObjectId strings in wishlist/addedPlaces
     const users = await User.find({ role: { $in: ["user", "admin"] } })
-      .select("-password -refreshTokens")
+      .select("-password -refreshTokens -wishlist -addedPlaces -visitedPlaces -notifications")
       .sort({ createdAt: -1 });
     res.json({ success: true, users });
   } catch (error) {
@@ -373,7 +378,7 @@ exports.getAdmins = async (req, res) => {
     const admins = await User.find({
       $or: [{ role: "admin" }, { role: "superadmin" }, { adminStatus: { $ne: "none" } }]
     })
-      .select("-password -refreshTokens")
+      .select("-password -refreshTokens -wishlist -addedPlaces -visitedPlaces -notifications")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, admins });

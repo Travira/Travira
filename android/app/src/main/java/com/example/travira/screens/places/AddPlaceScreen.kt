@@ -178,22 +178,31 @@ fun AddPlaceScreen(
                             if (imageUri != null) {
                                 imageUrl = CloudinaryUploader.uploadImage(context, imageUri!!)
                             }
-                            val res = RetrofitInstance.placeApi.addPlace(
-                                bearer = "Bearer $token",
-                                body = AddPlaceRequest(
-                                    name = name.trim(),
-                                    shortDescription = shortDescription.trim().ifBlank { null },
-                                    description = description.trim().ifBlank { null },
-                                    city = city.trim().ifBlank { null },
-                                    state = state.trim().ifBlank { null },
-                                    country = country.trim().ifBlank { null },
-                                    location = location.trim().ifBlank { null },
-                                    imageUrl = imageUrl
-                                )
+                            val body = AddPlaceRequest(
+                                name = name.trim(),
+                                shortDescription = shortDescription.trim().ifBlank { null },
+                                description = description.trim().ifBlank { null },
+                                city = city.trim().ifBlank { null },
+                                state = state.trim().ifBlank { null },
+                                country = country.trim().ifBlank { null },
+                                location = location.trim().ifBlank { null },
+                                imageUrl = imageUrl
                             )
-                            successMsg = res.message ?: "Place submitted for approval"
-                            // small delay then go back / refresh
-                            kotlinx.coroutines.delay(800)
+                            val res = if (tokenManager.isAdmin) {
+                                RetrofitInstance.adminApi.addPlace(
+                                    bearer = "Bearer $token",
+                                    body = body
+                                )
+                            } else {
+                                RetrofitInstance.placeApi.addPlace(
+                                    bearer = "Bearer $token",
+                                    body = body
+                                )
+                            }
+                            successMsg = res.message
+                                ?: if (tokenManager.isAdmin) "Place published"
+                                else "Place submitted for approval"
+                            // Go straight home (caller refreshes list)
                             onSubmitted()
                         } catch (e: Exception) {
                             error = e.message ?: "Failed to submit place"
@@ -215,13 +224,19 @@ fun AddPlaceScreen(
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
-                    Text("Submit for approval", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (tokenManager.isAdmin) "Publish place" else "Submit for approval",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "New places are reviewed by admin before they appear on the home feed.",
+                text = if (tokenManager.isAdmin)
+                    "As admin, your place goes live on the home feed immediately."
+                else
+                    "New places are reviewed by admin before they appear on the home feed.",
                 fontSize = 12.sp,
                 color = Color.Gray
             )

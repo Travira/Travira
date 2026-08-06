@@ -107,48 +107,29 @@ exports.addPlace = async (req, res) => {
 
 
 
-await place.save();
+    await place.save();
 
+    await User.findByIdAndUpdate(req.user.id, {
+      $push: { addedPlaces: place._id }
+    });
 
+    const populated = await Place.findById(place._id).populate(
+      "addedBy",
+      "name email"
+    );
 
-await User.findByIdAndUpdate(
-
-req.user.id,
-
-{
-
-$push:{
-
-addedPlaces:place._id
-
-}
-
-}
-
-);
-
-
-
-res.json({
+    res.json({
       success: true,
       message: isAdminActor
         ? "Place published"
         : "Place submitted for approval",
-      place
+      place: populated
     });
-
-
-
-}catch(error){
-
-res.status(500).json({
-
-message:error.message
-
-});
-
-}
-
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
 };
 
 
