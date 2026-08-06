@@ -1,6 +1,5 @@
 package com.example.travira.remote
 
-import com.example.travira.model.Place
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -11,13 +10,12 @@ import retrofit2.http.Path
 interface PlaceApi {
 
     /**
-     * Live deployed API: GET /api/places
-     * Returns a raw JSON array of places (not wrapped).
+     * Current backend: GET /api/place
+     * Response: { "success": true, "data": [ ...places ] }
      */
-    @GET("api/places")
-    suspend fun getPlaces(): List<Place>
+    @GET("api/place")
+    suspend fun getPlaces(): PlacesResponse
 
-    /** Local/newer backend style (may 404 on current Render deploy) */
     @GET("api/place/{id}")
     suspend fun getPlaceById(@Path("id") id: String): PlaceResponse
 

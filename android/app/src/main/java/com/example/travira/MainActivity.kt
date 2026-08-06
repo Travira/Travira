@@ -80,8 +80,8 @@ fun TraviraRoot() {
     LaunchedEffect(Unit) {
         try {
             val response = RetrofitInstance.placeApi.getPlaces()
-            prefetchedPlaces = response
-            Log.d("TRAVIRA_API", "PREFETCH PLACES: ${response.size}")
+            prefetchedPlaces = response.data
+            Log.d("TRAVIRA_API", "PREFETCH PLACES: ${response.data.size}")
         } catch (e: Exception) {
             Log.e("TRAVIRA_API", "Prefetch error: ${e.message}")
             prefetchError = e.message
@@ -170,8 +170,8 @@ fun TraviraApp(
         errorMessage = null
         try {
             val response = RetrofitInstance.placeApi.getPlaces()
-            placesList = response
-            Log.d("TRAVIRA_API", "TOTAL PLACES: ${response.size}")
+            placesList = response.data
+            Log.d("TRAVIRA_API", "TOTAL PLACES: ${response.data.size}")
         } catch (e: Exception) {
             Log.e("TRAVIRA_API", e.message ?: "API ERROR")
             errorMessage = e.message ?: "Failed to load places"

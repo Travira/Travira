@@ -9,17 +9,10 @@ exports.getPlaces = async(req,res)=>{
 
 try{
 
-
-const places =
-await Place.find({
-
-    approvalStatus:"approved"
-
-})
-.populate(
-"addedBy",
-"name email"
-);
+// Exclude pending/rejected only (includes legacy docs with no status)
+const places = await Place.find({
+  approvalStatus: { $nin: ["pending", "rejected"] }
+}).populate("addedBy", "name email");
 
 
 

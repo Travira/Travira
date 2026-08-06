@@ -1,5 +1,6 @@
 package com.example.travira.model
 
+
 /**
  * Matches the live API response from GET /api/places
  * (raw JSON array with rating field).

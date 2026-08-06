@@ -37,6 +37,7 @@ const connectDB = async () => {
 
 app.get("/", (req, res) => res.send("🚀 Travira Backend is Running..."));
 app.use("/api/place", placeRoutes);
+app.use("/api/places", placeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 

@@ -140,3 +140,5 @@ mongoose.model(
 placeSchema,
 "place"
 );
+
+module.exports = mongoose.model("Place", placeSchema, "places");
