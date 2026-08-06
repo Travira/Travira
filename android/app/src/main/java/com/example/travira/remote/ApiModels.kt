@@ -117,7 +117,23 @@ data class UpdateProfileRequest(
 
 data class SimpleMessageResponse(
     val success: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val visitorsCount: Int? = null,
+    val averageRating: Double? = null,
+    val ratingsCount: Int? = null
+)
+
+data class RatePlaceRequest(
+    val value: Int,
+    val feedback: String? = null
+)
+
+data class RatePlaceResponse(
+    val success: Boolean = false,
+    val message: String? = null,
+    val averageRating: Double = 0.0,
+    val ratingsCount: Int = 0,
+    val visitorsCount: Int = 0
 )
 
 data class NotificationsResponse(

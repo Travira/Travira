@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,10 +46,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +72,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.travira.auth.TokenManager
 import com.example.travira.model.Place
+import com.example.travira.remote.RatePlaceRequest
 import com.example.travira.remote.RetrofitInstance
 import kotlinx.coroutines.launch
 
@@ -87,6 +92,12 @@ fun PlaceScreen(
     val scope = rememberCoroutineScope()
     var isWishlisted by remember { mutableStateOf(isWishlistedInitially) }
     var isVisited by remember { mutableStateOf(isVisitedInitially) }
+    var liveVisitors by remember { mutableIntStateOf(place.visitorsCount) }
+    var liveRating by remember { mutableDoubleStateOf(place.displayRating) }
+    var liveRatingsCount by remember { mutableIntStateOf(place.ratingsCount) }
+    var userStars by remember { mutableIntStateOf(0) }
+    var ratingFeedback by remember { mutableStateOf("") }
+    var ratingSubmitting by remember { mutableStateOf(false) }
     var actionMsg by remember { mutableStateOf<String?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -350,13 +361,20 @@ fun PlaceScreen(
                     InfoPill(
                         icon = { Icon(Icons.Default.Star, null, tint = Color(0xFFFFB300), modifier = Modifier.size(18.dp)) },
                         label = "Rating",
-                        value = String.format("%.1f", place.displayRating)
+                        value = String.format("%.1f", liveRating)
                     )
                     InfoPill(
                         icon = { Icon(Icons.Default.People, null, tint = Color(0xFF1976D2), modifier = Modifier.size(18.dp)) },
                         label = "Visitors",
-                        value = formatCount(place.visitorsCount)
+                        value = formatCount(liveVisitors)
                     )
+                    if (liveRatingsCount > 0) {
+                        InfoPill(
+                            icon = null,
+                            label = "Reviews",
+                            value = liveRatingsCount.toString()
+                        )
+                    }
                     InfoPill(
                         icon = { Icon(Icons.Outlined.Person, null, tint = Color(0xFF5E35B1), modifier = Modifier.size(18.dp)) },
                         label = "Added by",
@@ -406,12 +424,14 @@ fun PlaceScreen(
                         onClick = {
                             authOr { token ->
                                 if (isVisited) {
-                                    RetrofitInstance.authApi.removeVisitedPlace("Bearer $token", place._id)
+                                    val res = RetrofitInstance.authApi.removeVisitedPlace("Bearer $token", place._id)
                                     isVisited = false
+                                    res.visitorsCount?.let { liveVisitors = it }
                                     actionMsg = "Removed from visited"
                                 } else {
-                                    RetrofitInstance.authApi.addVisitedPlace("Bearer $token", place._id)
+                                    val res = RetrofitInstance.authApi.addVisitedPlace("Bearer $token", place._id)
                                     isVisited = true
+                                    res.visitorsCount?.let { liveVisitors = it }
                                     actionMsg = "Marked as visited"
                                 }
                             }
@@ -429,6 +449,108 @@ fun PlaceScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                 }
+
+                // ── Rate this place ────────────────────────────────
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Rate this place",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1A1A1A)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Your rating helps other travelers. You can update it anytime.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF78909C)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            for (i in 1..5) {
+                                Icon(
+                                    imageVector = if (i <= userStars) Icons.Default.Star else Icons.Outlined.Star,
+                                    contentDescription = "$i stars",
+                                    tint = if (i <= userStars) Color(0xFFFFB300) else Color(0xFFB0BEC5),
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clickable { userStars = i }
+                                )
+                            }
+                            if (userStars > 0) {
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "$userStars / 5",
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF455A64)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = ratingFeedback,
+                            onValueChange = { ratingFeedback = it },
+                            label = { Text("Feedback (optional)") },
+                            placeholder = { Text("What did you like or improve?") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            minLines = 2,
+                            maxLines = 4
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                if (userStars < 1) {
+                                    actionMsg = "Tap stars to choose a rating first"
+                                    return@Button
+                                }
+                                authOr { token ->
+                                    ratingSubmitting = true
+                                    try {
+                                        val res = RetrofitInstance.placeApi.ratePlace(
+                                            bearer = "Bearer $token",
+                                            id = place._id,
+                                            body = RatePlaceRequest(
+                                                value = userStars,
+                                                feedback = ratingFeedback.trim().ifBlank { null }
+                                            )
+                                        )
+                                        liveRating = res.averageRating
+                                        liveRatingsCount = res.ratingsCount
+                                        if (res.visitorsCount > 0) liveVisitors = res.visitorsCount
+                                        actionMsg = res.message ?: "Thanks for your rating!"
+                                    } finally {
+                                        ratingSubmitting = false
+                                    }
+                                }
+                            },
+                            enabled = !ratingSubmitting && userStars > 0,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB300))
+                        ) {
+                            Text(
+                                if (ratingSubmitting) "Submitting…" else "Submit rating",
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF3E2723)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
 
                 // Description
                 Text(
@@ -458,7 +580,7 @@ fun PlaceScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
                     ) {
-                        Column(Modifier = Modifier.padding(14.dp)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Text(
                                 "Feedback",
                                 fontWeight = FontWeight.SemiBold,

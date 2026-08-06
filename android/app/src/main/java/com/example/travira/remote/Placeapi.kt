@@ -61,6 +61,6 @@ interface PlaceApi {
     suspend fun ratePlace(
         @Header("Authorization") bearer: String,
         @Path("id") id: String,
-        @Body body: Map<String, Int>
-    ): SimpleMessageResponse
+        @Body body: RatePlaceRequest
+    ): RatePlaceResponse
 }

@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Place = require("../models/place");
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -738,17 +739,33 @@ exports.addVisitedPlace = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const place = await Place.findById(placeId);
+    if (!place) {
+      return res.status(404).json({ success: false, message: "Place not found" });
+    }
+
     const exists = (user.visitedPlaces || []).some(
       (v) => v.place && v.place.toString() === placeId
     );
     if (exists) {
-      return res.json({ success: true, message: "Already marked as visited" });
+      return res.json({
+        success: true,
+        message: "Already marked as visited",
+        visitorsCount: place.visitorsCount || 0
+      });
     }
 
     user.visitedPlaces.push({ place: placeId, visitedAt: new Date() });
     await user.save();
 
-    res.json({ success: true, message: "Marked as visited" });
+    place.visitorsCount = Math.max(0, (place.visitorsCount || 0) + 1);
+    await place.save();
+
+    res.json({
+      success: true,
+      message: "Marked as visited",
+      visitorsCount: place.visitorsCount
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -762,12 +779,30 @@ exports.removeVisitedPlace = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const had = (user.visitedPlaces || []).some(
+      (v) => v.place && v.place.toString() === placeId
+    );
+
     user.visitedPlaces = (user.visitedPlaces || []).filter(
       (v) => !v.place || v.place.toString() !== placeId
     );
     await user.save();
 
-    res.json({ success: true, message: "Removed from visited places" });
+    let visitorsCount = 0;
+    const place = await Place.findById(placeId);
+    if (place) {
+      if (had) {
+        place.visitorsCount = Math.max(0, (place.visitorsCount || 0) - 1);
+        await place.save();
+      }
+      visitorsCount = place.visitorsCount || 0;
+    }
+
+    res.json({
+      success: true,
+      message: "Removed from visited places",
+      visitorsCount
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

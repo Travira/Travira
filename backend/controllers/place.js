@@ -17,11 +17,17 @@ exports.getPlaces = async (req, res) => {
       ]
     })
       .populate("addedBy", "name email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = places.map((p) => ({
+      ...p,
+      ratingsCount: Array.isArray(p.ratings) ? p.ratings.length : 0
+    }));
 
     res.json({
       success: true,
-      data: places
+      data
     });
   } catch (error) {
     res.status(500).json({
@@ -49,7 +55,9 @@ exports.getPlaceById = async (req, res) => {
         { approvalStatus: null },
         { approvalStatus: "" }
       ]
-    }).populate("addedBy", "name email");
+    })
+      .populate("addedBy", "name email")
+      .lean();
 
     if (!place) {
       return res.status(404).json({
@@ -60,7 +68,10 @@ exports.getPlaceById = async (req, res) => {
 
     res.json({
       success: true,
-      place
+      place: {
+        ...place,
+        ratingsCount: Array.isArray(place.ratings) ? place.ratings.length : 0
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -488,122 +499,67 @@ exports.getWishlist = async (req, res) => {
 
 
 // ================= Rating =================
-
-
-exports.ratePlace = async(req,res)=>{
-
-try{
-
-
-const {
-value
-}=req.body;
-
-
-
-const place =
-await Place.findById(req.params.id);
-
-
-
-if(!place){
-
-return res.status(404).json({
-
-message:"Place not found"
-
-});
-
-}
-
-
-
-const existing =
-place.ratings.find(
-
-r=>r.user.toString()
-===req.user.id
-
-);
-
-
-
-if(existing){
-
-existing.value=value;
-
-}
-
-else{
-
-
-place.ratings.push({
-
-user:req.user.id,
-
-value
-
-});
-
-
-await User.findByIdAndUpdate(
-
-req.user.id,
-
-{
-
-$addToSet:{
-
-visitedPlaces:{
-
-place:place._id
-
-}
-
-}
-
-}
-
-);
-
-
-}
-
-
-
-const total =
-place.ratings.reduce(
-
-(sum,r)=>sum+r.value,
-
-0
-
-);
-
-
-
-place.averageRating =
-total/place.ratings.length;
-
-
-place.visitorsCount =
-place.ratings.length;
-
-
-
-await place.save();
-
-
-
-res.json({
-
-success:true,
-
-message:"Rating submitted",
-
-averageRating:place.averageRating
-
-});
+// Body: { value: 1-5, feedback?: string }
+// Updates averageRating from all ratings. Does NOT change visitorsCount
+// (visitorsCount is owned by mark-visited). Optionally marks place visited.
+
+exports.ratePlace = async (req, res) => {
+  try {
+    const raw = req.body?.value;
+    const value = Number(raw);
+    const feedback =
+      typeof req.body?.feedback === "string" ? req.body.feedback.trim() : "";
+
+    if (!Number.isFinite(value) || value < 1 || value > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be a number between 1 and 5"
+      });
+    }
+
+    const place = await Place.findById(req.params.id);
+    if (!place) {
+      return res.status(404).json({ success: false, message: "Place not found" });
+    }
+
+    const existing = place.ratings.find(
+      (r) => r.user && r.user.toString() === req.user.id
+    );
+
+    if (existing) {
+      existing.value = value;
+      if (feedback) existing.feedback = feedback;
+      existing.createdAt = new Date();
+    } else {
+      place.ratings.push({
+        user: req.user.id,
+        value,
+        feedback: feedback || "",
+        createdAt: new Date()
+      });
+    }
+
+    const total = place.ratings.reduce((sum, r) => sum + (r.value || 0), 0);
+    place.averageRating =
+      place.ratings.length > 0
+        ? Math.round((total / place.ratings.length) * 10) / 10
+        : 0;
+
+    await place.save();
+
+    res.json({
+      success: true,
+      message: existing ? "Rating updated" : "Rating submitted",
+      averageRating: place.averageRating,
+      ratingsCount: place.ratings.length,
+      visitorsCount: place.visitorsCount,
+      place: {
+        _id: place._id,
+        averageRating: place.averageRating,
+        visitorsCount: place.visitorsCount,
+        ratingsCount: place.ratings.length
+      }
+    });
 
 
 

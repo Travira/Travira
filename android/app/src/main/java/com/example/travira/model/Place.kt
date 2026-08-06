@@ -18,6 +18,7 @@ data class Place(
     val rating: Double = 0.0,
     val averageRating: Double = 0.0,
     val visitorsCount: Int = 0,
+    val ratingsCount: Int = 0,
     val approvalStatus: String? = null,
     val adminFeedback: String? = null,
     val createdAt: String? = null,
