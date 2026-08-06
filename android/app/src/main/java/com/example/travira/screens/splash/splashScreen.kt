@@ -28,35 +28,35 @@ fun SplashScreen(
     onFinish: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        delay(2500)
+        delay(0)
         onFinish()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0B1D2A), Color(0xFF1565C0))
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Travira",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Explore smarter. Discover deeper.",
-                color = Color.White.copy(alpha = 0.85f),
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(28.dp))
-            CircularProgressIndicator(color = Color.White)
-        }
-    }
+//    Box(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .background(
+//                Brush.verticalGradient(
+//                    listOf(Color(0xFF0B1D2A), Color(0xFF1565C0))
+//                )
+//            ),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//            Text(
+//                text = "Travira",
+//                color = Color.White,
+//                fontSize = 40.sp,
+//                fontWeight = FontWeight.Bold
+//            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = "Explore smarter. Discover deeper.",
+//                color = Color.White.copy(alpha = 0.85f),
+//                fontSize = 14.sp
+//            )
+//            Spacer(modifier = Modifier.height(28.dp))
+//            CircularProgressIndicator(color = Color.White)
+//        }
+//    }
 }

@@ -42,6 +42,7 @@ import com.example.travira.screens.profile.ProfileScreen
 import com.example.travira.screens.profile.ProfileSection
 import com.example.travira.screens.profile.VisitedPlacesScreen
 import com.example.travira.screens.profile.WishlistScreen
+import com.example.travira.screens.splash.IntroVideoScreen
 import com.example.travira.screens.splash.SplashScreen
 import com.example.travira.ui.theme.TraviraTheme
 import kotlinx.coroutines.launch
@@ -79,7 +80,8 @@ fun TraviraRoot() {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
 
-    var showSplash by remember { mutableStateOf(true) }
+    // 0 = logo splash, 1 = intro video, 2 = main app
+    var launchStep by remember { mutableStateOf(0) }
     var prefetchedPlaces by remember { mutableStateOf<List<Place>>(emptyList()) }
     var prefetchError by remember { mutableStateOf<String?>(null) }
 
@@ -94,10 +96,10 @@ fun TraviraRoot() {
         }
     }
 
-    if (showSplash) {
-        SplashScreen(onFinish = { showSplash = false })
-    } else {
-        TraviraApp(
+    when (launchStep) {
+        0 -> SplashScreen(onFinish = { launchStep = 1 })
+        1 -> IntroVideoScreen(onFinish = { launchStep = 2 })
+        else -> TraviraApp(
             tokenManager = tokenManager,
             initialPlaces = prefetchedPlaces,
             initialError = prefetchError

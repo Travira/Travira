@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -156,8 +155,9 @@ fun AIChatScreen(
         modifier = modifier
             .fillMaxSize()
             .background(SoftBg)
-            .navigationBarsPadding()
             .imePadding()
+            // Keep content above system nav + Travira bottom bar (~80–100dp)
+            .padding(bottom = 96.dp)
     ) {
         // Header
         Row(
@@ -201,7 +201,12 @@ fun AIChatScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 12.dp,
+                bottom = 8.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(messages, key = { it.id }) { msg ->
@@ -228,29 +233,34 @@ fun AIChatScreen(
                     }
                 }
             }
-            item { Spacer(Modifier.height(72.dp)) }
         }
 
-        // Input bar
+        // Input bar — sits above the bottom navigation
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = input,
                 onValueChange = { if (it.length <= 2000) input = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
                 placeholder = { Text("Ask about trips, places, tips…") },
                 shape = RoundedCornerShape(24.dp),
-                maxLines = 4,
+                maxLines = 3,
+                singleLine = false,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { send() }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Teal,
-                    cursorColor = Teal
+                    unfocusedBorderColor = Color(0xFFCFD8DC),
+                    cursorColor = Teal,
+                    focusedContainerColor = SoftBg,
+                    unfocusedContainerColor = SoftBg
                 )
             )
             Spacer(Modifier.size(8.dp))
