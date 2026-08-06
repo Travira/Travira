@@ -1,49 +1,29 @@
-name: Android Release Build
+name: Backend CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: backend
     steps:
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-
-
-      - name: Create keystore file
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/travira-release-key.jks
-
-
-      - name: Create keystore properties
-        run: |
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/keystore.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/keystore.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/keystore.properties
-          echo "storeFile=../travira-release-key.jks" >> android/keystore.properties
-
-
-      - name: Build Release APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Travira-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          node-version: "20"
+      - run: npm ci
+      # optional: run tests/scripts with secrets
+      # env:
+      #   MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      #   ROOT_ADMIN_EMAIL: ${{ secrets.ROOT_ADMIN_EMAIL }}
+      #   ROOT_ADMIN_PASSWORD: ${{ secrets.ROOT_ADMIN_PASSWORD }}
