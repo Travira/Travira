@@ -17,8 +17,11 @@ const {
   getUsers,
   getUserDetail,
   adminCreateUser,
+  adminUpdateUser,
+  adminDeleteUser,
   getAdmins,
-  setAdminStatus
+  setAdminStatus,
+  deleteAdmin
 } = require("../controllers/admin");
 
 // All routes require logged-in admin (or superadmin)
@@ -39,9 +42,12 @@ router.post("/places", adminAddPlace);
 router.get("/users", getUsers);
 router.get("/users/:id", getUserDetail);
 router.post("/users", adminCreateUser);
+router.put("/users/:id", adminUpdateUser);
+router.delete("/users/:id", adminDeleteUser);
 
 // ── Admins (Preet / superadmin only – enforced in controller) ──
 router.get("/admins", getAdmins);
 router.put("/admins/:id/status", setAdminStatus);
+router.delete("/admins/:id", deleteAdmin);
 
 module.exports = router;

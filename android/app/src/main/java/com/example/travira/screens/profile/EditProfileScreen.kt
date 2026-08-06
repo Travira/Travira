@@ -68,6 +68,7 @@ fun EditProfileScreen(
     val scope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf(user?.name ?: "") }
+    var bio by remember { mutableStateOf(user?.bio ?: "") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
     var location by remember { mutableStateOf(user?.location ?: "") }
     var profileUrl by remember { mutableStateOf(user?.profileImage) }
@@ -187,6 +188,16 @@ fun EditProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
+                    value = bio,
+                    onValueChange = { bio = it },
+                    label = { Text("Bio") },
+                    placeholder = { Text("A short line about you…") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
                     value = user?.email ?: "",
                     onValueChange = {},
                     label = { Text("Email") },
@@ -230,34 +241,64 @@ fun EditProfileScreen(
                             try {
                                 val token = tokenManager.accessToken
                                     ?: throw Exception("Not logged in")
-                                var newProfile = profileUrl
-                                var newCover = coverUrl
-                                if (profileUri != null) {
-                                    newProfile = CloudinaryUploader.uploadImage(context, profileUri!!)
-                                }
-                                if (coverUri != null) {
-                                    newCover = CloudinaryUploader.uploadImage(context, coverUri!!)
-                                }
-                                val res = RetrofitInstance.authApi.updateProfile(
+                                // Save text fields first so a failed photo upload still keeps name/phone/location
+                                val textRes = RetrofitInstance.authApi.updateProfile(
                                     "Bearer $token",
                                     UpdateProfileRequest(
                                         name = name.trim().ifBlank { null },
+                                        bio = bio.trim().ifBlank { null },
                                         phone = phone.trim().ifBlank { null },
-                                        location = location.trim().ifBlank { null },
-                                        profileImage = newProfile,
-                                        coverImage = newCover
+                                        location = location.trim().ifBlank { null }
                                     )
                                 )
-                                val updated = res.user
+                                var updated = textRes.user
+                                var photoError: String? = null
+
+                                var newProfile = profileUrl
+                                var newCover = coverUrl
+                                if (profileUri != null) {
+                                    try {
+                                        newProfile = CloudinaryUploader.uploadImage(context, profileUri!!)
+                                    } catch (e: Exception) {
+                                        photoError = e.message ?: "Profile photo upload failed"
+                                    }
+                                }
+                                if (coverUri != null) {
+                                    try {
+                                        newCover = CloudinaryUploader.uploadImage(context, coverUri!!)
+                                    } catch (e: Exception) {
+                                        photoError = listOfNotNull(photoError, e.message).joinToString(" · ")
+                                    }
+                                }
+
+                                if (profileUri != null || coverUri != null) {
+                                    if (newProfile != profileUrl || newCover != coverUrl) {
+                                        val imgRes = RetrofitInstance.authApi.updateProfile(
+                                            "Bearer $token",
+                                            UpdateProfileRequest(
+                                                profileImage = newProfile,
+                                                coverImage = newCover
+                                            )
+                                        )
+                                        if (imgRes.user != null) updated = imgRes.user
+                                    }
+                                }
+
                                 if (updated != null) {
                                     profileUrl = updated.profileImage
                                     coverUrl = updated.coverImage
-                                    profileUri = null
-                                    coverUri = null
-                                    success = "Profile saved"
+                                    if (photoError == null) {
+                                        profileUri = null
+                                        coverUri = null
+                                    }
+                                    success = if (photoError == null) "Profile saved"
+                                    else "Details saved. Photos: $photoError"
                                     onSaved(updated)
                                 } else {
-                                    error = res.message ?: "Failed to save"
+                                    error = textRes.message ?: photoError ?: "Failed to save"
+                                }
+                                if (photoError != null && error == null) {
+                                    error = photoError
                                 }
                             } catch (e: Exception) {
                                 error = e.message ?: "Failed to save profile"

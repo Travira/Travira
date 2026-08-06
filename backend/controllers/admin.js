@@ -294,6 +294,73 @@ exports.adminCreateUser = async (req, res) => {
   }
 };
 
+/** Admin updates a user (name, email, phone, location, bio, password, role). */
+exports.adminUpdateUser = async (req, res) => {
+  try {
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: "User not found" });
+    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+      return res.status(403).json({ message: "Cannot modify main admin account" });
+    }
+
+    const { name, email, phone, location, bio, password, role } = req.body;
+    if (name !== undefined) target.name = name;
+    if (email !== undefined) {
+      const clash = await User.findOne({ email, _id: { $ne: target._id } });
+      if (clash) return res.status(400).json({ message: "Email already in use" });
+      target.email = email;
+    }
+    if (phone !== undefined) target.phone = phone;
+    if (location !== undefined) target.location = location;
+    if (bio !== undefined) target.bio = bio;
+    if (password && String(password).length >= 6) {
+      target.password = await bcrypt.hash(String(password), 10);
+    }
+    if (role === "admin" || role === "user") {
+      target.role = role;
+      target.adminStatus = role === "admin" ? "approved" : "none";
+    }
+
+    await target.save();
+
+    await notifyUser(
+      target._id,
+      "Account updated by admin",
+      password
+        ? "An admin updated your account details and password. Please log in with the new credentials if shared with you."
+        : "An admin updated your account details."
+    );
+
+    const safe = await User.findById(target._id)
+      .select("-password -refreshTokens")
+      .populate("wishlist", "name city imageUrl averageRating")
+      .populate("addedPlaces", "name city approvalStatus imageUrl")
+      .populate("visitedPlaces.place", "name city imageUrl");
+
+    res.json({ success: true, message: "User updated", user: safe });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.adminDeleteUser = async (req, res) => {
+  try {
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: "User not found" });
+    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+      return res.status(403).json({ message: "Cannot delete main admin" });
+    }
+    if (target._id.toString() === req.user.id) {
+      return res.status(403).json({ message: "Cannot delete yourself" });
+    }
+
+    await User.findByIdAndDelete(target._id);
+    res.json({ success: true, message: "User deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ================= Admin applications (superadmin only) =================
 
 exports.getAdmins = async (req, res) => {
@@ -322,7 +389,7 @@ exports.setAdminStatus = async (req, res) => {
       return res.status(403).json({ message: "Only main admin (Preet) can manage admins" });
     }
 
-    const { status } = req.body; // pending | approved | rejected
+    const { status, feedback } = req.body; // pending | approved | rejected
     const allowed = ["pending", "approved", "rejected"];
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -330,7 +397,7 @@ exports.setAdminStatus = async (req, res) => {
 
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "User not found" });
-    if (target.role === "superadmin") {
+    if (target.role === "superadmin" || target.email === "preet@travira.app") {
       return res.status(403).json({ message: "Cannot change main admin" });
     }
 
@@ -339,12 +406,21 @@ exports.setAdminStatus = async (req, res) => {
     if (status === "rejected") target.role = "user";
     await target.save();
 
+    const note =
+      typeof feedback === "string" && feedback.trim()
+        ? ` Feedback: ${feedback.trim()}`
+        : "";
+
     await notifyUser(
       target._id,
-      status === "approved" ? "Admin Access Approved" : "Admin Access Update",
       status === "approved"
-        ? "You are now an admin on Travira."
-        : `Your admin application status: ${status}`
+        ? "Admin Access Approved"
+        : status === "rejected"
+          ? "Admin Access Rejected"
+          : "Admin Access Update",
+      status === "approved"
+        ? `You are now an admin on Travira.${note}`
+        : `Your admin application status: ${status}.${note}`
     );
 
     res.json({
@@ -358,6 +434,32 @@ exports.setAdminStatus = async (req, res) => {
         adminStatus: target.adminStatus
       }
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/** Superadmin deletes an admin applicant / admin account */
+exports.deleteAdmin = async (req, res) => {
+  try {
+    const me = await User.findById(req.user.id);
+    if (!isSuperAdmin(me)) {
+      return res.status(403).json({ message: "Only main admin (Preet) can delete admins" });
+    }
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: "User not found" });
+    if (target.role === "superadmin" || target.email === "preet@travira.app") {
+      return res.status(403).json({ message: "Cannot delete main admin" });
+    }
+
+    await notifyUser(
+      target._id,
+      "Admin access removed",
+      "Your admin access was removed by the main admin."
+    );
+
+    await User.findByIdAndDelete(target._id);
+    res.json({ success: true, message: "Admin removed" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

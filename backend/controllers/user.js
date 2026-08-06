@@ -683,7 +683,7 @@ exports.registerAdmin = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const allowed = ["name", "phone", "location", "profileImage", "coverImage"];
+    const allowed = ["name", "phone", "location", "profileImage", "coverImage", "bio"];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];

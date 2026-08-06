@@ -1,6 +1,7 @@
 package com.example.travira.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travira.auth.TokenManager
 import com.example.travira.model.NotificationItem
+import com.example.travira.remote.MarkNotificationsReadRequest
 import com.example.travira.remote.RetrofitInstance
 import kotlinx.coroutines.launch
 
@@ -59,6 +62,7 @@ fun NotificationsScreen(
     var items by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
 
     fun load() {
         scope.launch {
@@ -72,6 +76,33 @@ fun NotificationsScreen(
                 error = e.message
             } finally {
                 loading = false
+            }
+        }
+    }
+
+    fun markRead(ids: List<String>?) {
+        if (busy) return
+        scope.launch {
+            busy = true
+            try {
+                val token = tokenManager.accessToken ?: return@launch
+                val res = RetrofitInstance.authApi.markNotificationsRead(
+                    "Bearer $token",
+                    MarkNotificationsReadRequest(ids = ids)
+                )
+                val updated = res.notifications
+                items = if (updated.isNotEmpty()) {
+                    updated.sortedByDescending { it.createdAt ?: "" }
+                } else if (ids.isNullOrEmpty()) {
+                    items.map { it.copy(read = true) }
+                } else {
+                    val idSet = ids.toSet()
+                    items.map { if (it._id != null && it._id in idSet) it.copy(read = true) else it }
+                }
+            } catch (e: Exception) {
+                error = e.message
+            } finally {
+                busy = false
             }
         }
     }
@@ -90,19 +121,8 @@ fun NotificationsScreen(
                 actions = {
                     if (items.any { !it.read }) {
                         TextButton(
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        val token = tokenManager.accessToken ?: return@launch
-                                        val res = RetrofitInstance.authApi.markNotificationsRead(
-                                            "Bearer $token"
-                                        )
-                                        items = res.notifications.ifEmpty {
-                                            items.map { it.copy(read = true) }
-                                        }
-                                    } catch (_: Exception) { }
-                                }
-                            }
+                            onClick = { markRead(null) },
+                            enabled = !busy
                         ) {
                             Text("Mark all read", color = Color.White, fontSize = 13.sp)
                         }
@@ -154,7 +174,11 @@ fun NotificationsScreen(
                     ) {
                         items(items, key = { it._id ?: (it.title + it.createdAt) }) { n ->
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !n.read && !n._id.isNullOrBlank()) {
+                                        markRead(listOf(n._id!!))
+                                    },
                                 shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (n.read) Color.White else Color(0xFFE3F2FD)
@@ -202,6 +226,27 @@ fun NotificationsScreen(
                                                 color = Color(0xFF9E9E9E)
                                             )
                                         }
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Right side: check for read, or tap affordance for unread
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (n.read) Color(0xFFE8F5E9) else Color(0xFFBBDEFB)
+                                            )
+                                            .clickable(enabled = !n.read && !n._id.isNullOrBlank() && !busy) {
+                                                markRead(listOf(n._id!!))
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = if (n.read) "Read" else "Mark as read",
+                                            tint = if (n.read) Color(0xFF2E7D32) else Color(0xFF1565C0),
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                     }
                                 }
                             }

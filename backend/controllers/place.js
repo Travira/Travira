@@ -88,23 +88,22 @@ exports.getPlaceById = async (req, res) => {
 
 
 // ================= Add Place =================
+// Admins / superadmins skip approval and go live immediately.
 
+exports.addPlace = async (req, res) => {
+  try {
+    const actor = await User.findById(req.user.id).select("role email");
+    const isAdminActor =
+      actor &&
+      (actor.role === "admin" ||
+        actor.role === "superadmin" ||
+        actor.email === "preet@travira.app");
 
-exports.addPlace = async(req,res)=>{
-
-try{
-
-
-const place =
-new Place({
-
-...req.body,
-
-addedBy:req.user.id,
-
-approvalStatus:"pending"
-
-});
+    const place = new Place({
+      ...req.body,
+      addedBy: req.user.id,
+      approvalStatus: isAdminActor ? "approved" : "pending"
+    });
 
 
 
@@ -131,14 +130,12 @@ addedPlaces:place._id
 
 
 res.json({
-
-success:true,
-
-message:"Place submitted for approval",
-
-place
-
-});
+      success: true,
+      message: isAdminActor
+        ? "Place published"
+        : "Place submitted for approval",
+      place
+    });
 
 
 

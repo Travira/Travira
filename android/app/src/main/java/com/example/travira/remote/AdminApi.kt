@@ -80,6 +80,19 @@ interface AdminApi {
         @Body body: Map<String, String>
     ): SimpleMessageResponse
 
+    @PUT("api/admin/users/{id}")
+    suspend fun updateUser(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String,
+        @Body body: AdminUpdateUserRequest
+    ): AdminUserDetailResponse
+
+    @DELETE("api/admin/users/{id}")
+    suspend fun deleteUser(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String
+    ): SimpleMessageResponse
+
     @GET("api/admin/admins")
     suspend fun getAdmins(
         @Header("Authorization") bearer: String
@@ -90,5 +103,11 @@ interface AdminApi {
         @Header("Authorization") bearer: String,
         @Path("id") id: String,
         @Body body: StatusBody
+    ): SimpleMessageResponse
+
+    @DELETE("api/admin/admins/{id}")
+    suspend fun deleteAdmin(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String
     ): SimpleMessageResponse
 }

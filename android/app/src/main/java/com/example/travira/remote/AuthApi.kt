@@ -46,7 +46,7 @@ interface AuthApi {
     @PUT("api/users/notifications/read")
     suspend fun markNotificationsRead(
         @Header("Authorization") bearer: String,
-        @Body body: Map<String, List<String>> = emptyMap()
+        @Body body: MarkNotificationsReadRequest = MarkNotificationsReadRequest()
     ): NotificationsResponse
 
     @GET("api/users/visited")

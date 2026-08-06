@@ -197,11 +197,7 @@ fun TraviraApp(
     fun onLoginSuccess() {
         isLoggedIn = true
         showLogin = false
-        if (tokenManager.isAdmin) {
-            showAdmin = true
-            pendingAction = PendingAction.NONE
-            return
-        }
+        // Admins stay on the main app; they open dashboard via bottom Admin tab
         when (pendingAction) {
             PendingAction.ADD_PLACE -> showAddPlace = true
             PendingAction.AI_CHAT -> selectedIndex = 1
@@ -368,30 +364,9 @@ fun TraviraApp(
                             onPlaceClick = { selectedPlace = it },
                             onRetry = { refreshTrigger++ },
                             onAddPlaceClick = { requireAuth(PendingAction.ADD_PLACE) },
-                            wishlistIds = wishlistIds,
-                            onToggleWishlist = { place ->
-                                if (!tokenManager.isLoggedIn) {
-                                    requireAuth(PendingAction.WISHLIST)
-                                } else {
-                                    scope.launch {
-                                        try {
-                                            val token = tokenManager.accessToken ?: return@launch
-                                            if (place._id in wishlistIds) {
-                                                RetrofitInstance.placeApi.removeWishlist(
-                                                    "Bearer $token",
-                                                    place._id
-                                                )
-                                            } else {
-                                                RetrofitInstance.placeApi.addWishlist(
-                                                    "Bearer $token",
-                                                    place._id
-                                                )
-                                            }
-                                            refreshUser()
-                                        } catch (_: Exception) { }
-                                    }
-                                }
-                            },
+                            userName = currentUser?.name
+                                ?: tokenManager.userName
+                                ?: if (isLoggedIn) "Traveler" else "Guest",
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -444,13 +419,18 @@ fun TraviraApp(
                 }
 
                 TraviraBottomBar(
-                    selectedIndex = selectedIndex,
+                    selectedIndex = selectedIndex.coerceIn(0, if (tokenManager.isAdmin) 3 else 2),
+                    showAdminTab = tokenManager.isAdmin,
                     onItemSelected = { index ->
                         if (index == 0 && selectedIndex == 0) {
                             refreshTrigger++
                         }
                         if (index == 1 && !tokenManager.isLoggedIn) {
                             requireAuth(PendingAction.AI_CHAT)
+                            return@TraviraBottomBar
+                        }
+                        if (index == 3 && tokenManager.isAdmin) {
+                            showAdmin = true
                             return@TraviraBottomBar
                         }
                         selectedIndex = index

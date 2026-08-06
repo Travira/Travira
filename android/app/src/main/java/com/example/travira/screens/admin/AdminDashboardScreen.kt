@@ -38,6 +38,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -381,37 +382,153 @@ private fun AdminUsersTab(tokenManager: TokenManager) {
     var loading by remember { mutableStateOf(true) }
     var selected by remember { mutableStateOf<User?>(null) }
     var detailNote by remember { mutableStateOf<String?>(null) }
+    var editName by remember { mutableStateOf("") }
+    var editEmail by remember { mutableStateOf("") }
+    var editPhone by remember { mutableStateOf("") }
+    var editLocation by remember { mutableStateOf("") }
+    var editBio by remember { mutableStateOf("") }
+    var editPassword by remember { mutableStateOf("") }
+    var actionMsg by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        try {
-            val token = tokenManager.accessToken ?: return@LaunchedEffect
-            val res = RetrofitInstance.adminApi.getUsers("Bearer $token")
-            users = res.users
-        } catch (_: Exception) {
-        } finally {
-            loading = false
+    fun loadUsers() {
+        scope.launch {
+            loading = true
+            try {
+                val token = tokenManager.accessToken ?: return@launch
+                val res = RetrofitInstance.adminApi.getUsers("Bearer $token")
+                users = res.users
+            } catch (_: Exception) {
+            } finally {
+                loading = false
+            }
         }
     }
 
+    LaunchedEffect(Unit) { loadUsers() }
+
     if (selected != null) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-            IconButton(onClick = { selected = null }) {
+        val u = selected!!
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            IconButton(onClick = { selected = null; actionMsg = null }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
             }
-            Text(selected!!.name, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(selected!!.email, color = Color.Gray)
-            Text("Role: ${selected!!.role}", fontSize = 14.sp)
+            if (!u.profileImage.isNullOrBlank()) {
+                coil3.compose.AsyncImage(
+                    model = u.profileImage,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(36.dp))
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Text(u.name, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(u.email, color = Color.Gray)
+            Text("Role: ${u.role}", fontSize = 14.sp)
             detailNote?.let { Text(it, fontSize = 12.sp, color = Color.Gray) }
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Wishlist: ${selected!!.wishlist.size}", fontWeight = FontWeight.Medium)
-            selected!!.wishlist.forEach {
-                Text("• ${it.name}", fontSize = 13.sp)
+
+            Text("Edit account", fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = editName, onValueChange = { editName = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = editEmail, onValueChange = { editEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = editPhone, onValueChange = { editPhone = it }, label = { Text("Phone") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = editLocation, onValueChange = { editLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = editBio, onValueChange = { editBio = it }, label = { Text("Bio") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = editPassword,
+                onValueChange = { editPassword = it },
+                label = { Text("New password (optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        actionMsg = null
+                        try {
+                            val token = tokenManager.accessToken ?: return@launch
+                            val res = RetrofitInstance.adminApi.updateUser(
+                                "Bearer $token",
+                                u.userId,
+                                com.example.travira.remote.AdminUpdateUserRequest(
+                                    name = editName.trim().ifBlank { null },
+                                    email = editEmail.trim().ifBlank { null },
+                                    phone = editPhone.trim().ifBlank { null },
+                                    location = editLocation.trim().ifBlank { null },
+                                    bio = editBio.trim().ifBlank { null },
+                                    password = editPassword.trim().ifBlank { null }
+                                )
+                            )
+                            selected = res.user ?: selected
+                            editPassword = ""
+                            actionMsg = res.message ?: "User updated"
+                            loadUsers()
+                        } catch (e: Exception) {
+                            actionMsg = e.message
+                        } finally {
+                            busy = false
+                        }
+                    }
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (busy) "Saving…" else "Save changes") }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        try {
+                            val token = tokenManager.accessToken ?: return@launch
+                            RetrofitInstance.adminApi.deleteUser("Bearer $token", u.userId)
+                            selected = null
+                            loadUsers()
+                        } catch (e: Exception) {
+                            actionMsg = e.message
+                        } finally {
+                            busy = false
+                        }
+                    }
+                },
+                enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Delete user") }
+
+            actionMsg?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(it, color = Color(0xFF1565C0), fontSize = 13.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Wishlist (${u.wishlist.size})", fontWeight = FontWeight.Medium)
+            u.wishlist.forEach { Text("• ${it.name}", fontSize = 13.sp) }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Visited (${u.visitedPlaces.size})", fontWeight = FontWeight.Medium)
+            u.visitedPlaces.forEach { v ->
+                Text("• ${v.place?.name ?: "—"}", fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Contributions: ${selected!!.addedPlaces.size}", fontWeight = FontWeight.Medium)
-            selected!!.addedPlaces.forEach {
+            Text("Contributions (${u.addedPlaces.size})", fontWeight = FontWeight.Medium)
+            u.addedPlaces.forEach {
                 Text("• ${it.name} (${it.approvalStatus ?: "—"})", fontSize = 13.sp)
             }
+            Spacer(modifier = Modifier.height(24.dp))
         }
         return
     }
@@ -420,16 +537,33 @@ private fun AdminUsersTab(tokenManager: TokenManager) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
     } else {
         LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Text("${users.size} users", fontWeight = FontWeight.Medium, color = Color.Gray)
+            }
             items(users, key = { it.userId }) { user ->
                 Card(
                     onClick = {
                         selected = user
+                        editName = user.name
+                        editEmail = user.email
+                        editPhone = user.phone.orEmpty()
+                        editLocation = user.location.orEmpty()
+                        editBio = user.bio.orEmpty()
+                        editPassword = ""
+                        actionMsg = null
                         scope.launch {
                             try {
                                 val token = tokenManager.accessToken ?: return@launch
                                 val res = RetrofitInstance.adminApi.getUserDetail("Bearer $token", user.userId)
                                 selected = res.user ?: user
                                 detailNote = res.passwordNote
+                                res.user?.let {
+                                    editName = it.name
+                                    editEmail = it.email
+                                    editPhone = it.phone.orEmpty()
+                                    editLocation = it.location.orEmpty()
+                                    editBio = it.bio.orEmpty()
+                                }
                             } catch (_: Exception) { }
                         }
                     },
@@ -582,14 +716,39 @@ private fun AdminAdminsTab(tokenManager: TokenManager) {
             Text(error ?: "", color = Color.Red, modifier = Modifier.padding(16.dp))
         }
         else -> LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Text(
+                    "Admin applications & accounts",
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Text(
+                    "Approve, reject, set pending, or remove. Applicants are notified.",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
             items(admins, key = { it.userId }) { admin ->
+                val status = admin.adminStatus ?: "none"
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(admin.name, fontWeight = FontWeight.Bold)
                         Text(admin.email, fontSize = 13.sp, color = Color.Gray)
-                        Text("Role: ${admin.role}  •  Status: ${admin.role}", fontSize = 12.sp)
-                        if (admin.role != "superadmin") {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        Text(
+                            "Role: ${admin.role}  •  Application: $status",
+                            fontSize = 12.sp,
+                            color = when (status) {
+                                "approved" -> Color(0xFF2E7D32)
+                                "rejected" -> Color(0xFFC62828)
+                                "pending" -> Color(0xFFF9A825)
+                                else -> Color.Gray
+                            }
+                        )
+                        if (admin.role != "superadmin" && admin.email != "preet@travira.app") {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(top = 8.dp)
+                            ) {
                                 Button(
                                     onClick = {
                                         scope.launch {
@@ -598,7 +757,7 @@ private fun AdminAdminsTab(tokenManager: TokenManager) {
                                                 RetrofitInstance.adminApi.setAdminStatus(
                                                     "Bearer $token",
                                                     admin.userId,
-                                                    StatusBody("approved")
+                                                    StatusBody("approved", feedback = "Welcome to the Travira admin team")
                                                 )
                                                 load()
                                             } catch (_: Exception) { }
@@ -614,7 +773,7 @@ private fun AdminAdminsTab(tokenManager: TokenManager) {
                                                 RetrofitInstance.adminApi.setAdminStatus(
                                                     "Bearer $token",
                                                     admin.userId,
-                                                    StatusBody("rejected")
+                                                    StatusBody("rejected", feedback = "Your admin application was not approved")
                                                 )
                                                 load()
                                             } catch (_: Exception) { }
@@ -638,6 +797,19 @@ private fun AdminAdminsTab(tokenManager: TokenManager) {
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF9A825))
                                 ) { Text("Pending") }
+                            }
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            val token = tokenManager.accessToken ?: return@launch
+                                            RetrofitInstance.adminApi.deleteAdmin("Bearer $token", admin.userId)
+                                            load()
+                                        } catch (_: Exception) { }
+                                    }
+                                }
+                            ) {
+                                Text("Delete admin", color = Color(0xFFC62828), fontSize = 13.sp)
                             }
                         }
                     }

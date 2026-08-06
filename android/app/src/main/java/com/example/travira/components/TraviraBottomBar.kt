@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SmartToy
@@ -31,59 +32,39 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-
 data class BottomBarItem(
     val title: String,
     val icon: ImageVector
 )
 
-
 @Composable
 fun TraviraBottomBar(
     selectedIndex: Int,
     onItemSelected: (Int) -> Unit,
+    showAdminTab: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-
-
-    val items = listOf(
-
-        BottomBarItem(
-            "Home",
-            Icons.Default.Home
-        ),
-
-        BottomBarItem(
-            "AI",
-            Icons.Default.SmartToy
-        ),
-
-        BottomBarItem(
-            "Profile",
-            Icons.Default.Person
-        )
-
-    )
-
+    val items = buildList {
+        add(BottomBarItem("Home", Icons.Default.Home))
+        add(BottomBarItem("AI", Icons.Default.SmartToy))
+        add(BottomBarItem("Profile", Icons.Default.Person))
+        if (showAdminTab) {
+            add(BottomBarItem("Admin", Icons.Default.AdminPanelSettings))
+        }
+    }
 
     Row(
-
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(
-                start = 60.dp,
-                end = 60.dp,
+                start = if (showAdminTab) 28.dp else 60.dp,
+                end = if (showAdminTab) 28.dp else 60.dp,
                 bottom = 16.dp
             ),
-
         horizontalArrangement = Arrangement.Center
-
     ) {
-
-
         Surface(
-
             modifier = Modifier
                 .fillMaxWidth(1f)
                 .height(65.dp)
@@ -91,158 +72,69 @@ fun TraviraBottomBar(
                     elevation = 5.dp,
                     shape = RoundedCornerShape(50.dp)
                 ),
-
             shape = RoundedCornerShape(50.dp),
-
-            color = Color(0xFF90CAF9).copy(
-                alpha = 0.50f
-            ),
-
+            color = Color(0xFF90CAF9).copy(alpha = 0.50f),
             tonalElevation = 0.dp
-
         ) {
-
-
             Row(
-
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Color.White.copy(alpha = 0.15f),
                         RoundedCornerShape(50.dp)
                     )
-                    .padding(horizontal = 15.dp),
-
+                    .padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
-
                 verticalAlignment = Alignment.CenterVertically
-
             ) {
-
-
                 items.forEachIndexed { index, item ->
-
-
-                    val selected =
-                        selectedIndex == index
-
-
-
+                    val selected = selectedIndex == index
                     val iconSize by animateDpAsState(
-
-                        targetValue =
-                            if(selected)
-                                30.dp
-                            else
-                                25.dp,
-
+                        targetValue = if (selected) 30.dp else 25.dp,
                         label = ""
-
                     )
-
-
-
                     val iconColor by animateColorAsState(
-
-                        targetValue =
-                            if(selected)
-
-                                MaterialTheme.colorScheme.primary
-
-                            else
-
-                                Color.Gray,
-
+                        targetValue = if (selected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            Color.Gray,
                         label = ""
-
                     )
-
-
 
                     Box(
-
                         modifier = Modifier
                             .size(48.dp)
                             .background(
-
-                                color =
-                                    if(selected)
-
-                                        MaterialTheme
-                                            .colorScheme
-                                            .primary
-                                            .copy(
-                                                alpha = 0.15f
-                                            )
-
-                                    else
-
-                                        Color.Transparent,
-
+                                color = if (selected)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                else
+                                    Color.Transparent,
                                 shape = CircleShape
-
                             )
-                            .clickable {
-
-                                onItemSelected(index)
-
-                            },
-
+                            .clickable { onItemSelected(index) },
                         contentAlignment = Alignment.Center
-
                     ) {
-
-
                         Icon(
-
                             imageVector = item.icon,
-
                             contentDescription = item.title,
-
-                            modifier = Modifier
-                                .size(iconSize),
-
+                            modifier = Modifier.size(iconSize),
                             tint = iconColor
-
                         )
-
-
                     }
-
-
                 }
-
-
             }
-
-
         }
-
-
     }
-
 }
-
-
-
 
 @Preview(showBackground = true)
 @Composable
 fun TraviraBottomBarPreview() {
-
-
     MaterialTheme {
-
-
         TraviraBottomBar(
-
             selectedIndex = 0,
-
-            onItemSelected = {}
-
+            onItemSelected = {},
+            showAdminTab = true
         )
-
-
     }
-
 }

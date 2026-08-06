@@ -143,28 +143,34 @@ fun AppCard(
                 Text(
                     text = place.name,
                     color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif
                 )
 
-                Text(
-                    text = listOfNotNull(place.city, place.state)
+                val subtitle = place.shortDescription?.takeIf { it.isNotBlank() }
+                    ?: listOfNotNull(place.city, place.state)
                         .joinToString(", ")
-                        .ifBlank { place.country ?: "" },
-                    color = Color.White.copy(alpha = 0.90f),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                        .ifBlank { place.country ?: "" }
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        color = Color.White.copy(alpha = 0.90f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2
+                    )
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Rating",
-                        tint = Color.White,
+                        tint = Color(0xFFFFD54F),
                         modifier = Modifier.height(16.dp)
                     )
                     Text(
-                        text = " ${place.displayRating}",
+                        text = " ${String.format("%.1f", place.displayRating)}",
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold

@@ -111,8 +111,23 @@ data class UpdateProfileRequest(
     val name: String? = null,
     val phone: String? = null,
     val location: String? = null,
+    val bio: String? = null,
     val profileImage: String? = null,
     val coverImage: String? = null
+)
+
+data class MarkNotificationsReadRequest(
+    val ids: List<String>? = null
+)
+
+data class AdminUpdateUserRequest(
+    val name: String? = null,
+    val email: String? = null,
+    val phone: String? = null,
+    val location: String? = null,
+    val bio: String? = null,
+    val password: String? = null,
+    val role: String? = null
 )
 
 data class SimpleMessageResponse(
