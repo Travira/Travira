@@ -68,9 +68,10 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val displayName = if (isLoggedIn) (user?.name?.ifBlank { "Traveler" } ?: "Traveler") else "Guest"
+    val bioFromUser = user?.bio
     val bio = when {
         !isLoggedIn -> "Browsing as guest. Login to save wishlist, add places & use AI."
-        !user?.bio.isNullOrBlank() -> user!!.bio!!
+        !bioFromUser.isNullOrBlank() -> bioFromUser
         else -> "Explore smarter. Discover deeper. Travel with confidence."
     }
     val email = if (isLoggedIn) (user?.email ?: "") else "guest@travira.app"

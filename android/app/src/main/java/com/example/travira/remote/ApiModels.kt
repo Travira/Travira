@@ -193,7 +193,8 @@ data class AdminUsersResponse(
 data class AdminUserDetailResponse(
     val success: Boolean = false,
     val user: User? = null,
-    val passwordNote: String? = null
+    val passwordNote: String? = null,
+    val message: String? = null
 )
 
 data class AdminListResponse(

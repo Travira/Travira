@@ -9,6 +9,7 @@ data class User(
     val adminStatus: String? = "none",
     val phone: String? = null,
     val location: String? = null,
+    val bio: String? = null,
     val profileImage: String? = null,
     val coverImage: String? = null,
     val wishlist: List<Place> = emptyList(),
