@@ -134,11 +134,6 @@ const placeSchema = new mongoose.Schema({
 });
 
 
-module.exports =
-mongoose.model(
-"Place",
-placeSchema,
-"place"
-);
-
+// Collection name "places" (Mongoose default plural of "Place").
+// Older seeded documents live here. Forced "place" returned empty lists.
 module.exports = mongoose.model("Place", placeSchema, "places");

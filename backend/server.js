@@ -37,7 +37,7 @@ const connectDB = async () => {
 
 app.get("/", (req, res) => res.send("🚀 Travira Backend is Running..."));
 app.use("/api/place", placeRoutes);
-app.use("/api/places", placeRoutes);
+app.use("/api/places", placeRoutes); // alias for older Android clients
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 
@@ -45,6 +45,16 @@ app.use((req, res) => res.status(404).json({ success: false, message: "API Route
 
 const startServer = async () => {
   try {
+    if (!process.env.JWT_SECRET) {
+      console.warn("⚠️  JWT_SECRET is missing — login will fail until you set it in Render env vars");
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      console.warn("⚠️  JWT_REFRESH_SECRET is missing — will fall back to JWT_SECRET if set");
+    }
+    if (!process.env.MONGODB_URI) {
+      console.error("❌ MONGODB_URI is missing");
+    }
+
     await connectDB();
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
