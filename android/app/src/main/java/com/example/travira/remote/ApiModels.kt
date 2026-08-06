@@ -123,3 +123,53 @@ data class NotificationsResponse(
     val notifications: List<NotificationItem> = emptyList(),
     val message: String? = null
 )
+
+// ── Admin DTOs ──────────────────────────────────────
+
+data class AdminPlacesResponse(
+    val success: Boolean = false,
+    val places: List<Place> = emptyList(),
+    val counts: PlaceCounts? = null
+)
+
+data class PlaceCounts(
+    val pending: Int = 0,
+    val approved: Int = 0,
+    val rejected: Int = 0,
+    val total: Int = 0
+)
+
+data class AdminPlaceDetailResponse(
+    val success: Boolean = false,
+    val place: Place? = null,
+    val stats: PlaceStats? = null
+)
+
+data class PlaceStats(
+    val visitorsCount: Int = 0,
+    val averageRating: Double = 0.0,
+    val ratingsCount: Int = 0,
+    val wishlistCount: Int = 0
+)
+
+data class AdminUsersResponse(
+    val success: Boolean = false,
+    val users: List<User> = emptyList()
+)
+
+data class AdminUserDetailResponse(
+    val success: Boolean = false,
+    val user: User? = null,
+    val passwordNote: String? = null
+)
+
+data class AdminListResponse(
+    val success: Boolean = false,
+    val admins: List<User> = emptyList()
+)
+
+data class StatusBody(
+    val status: String,
+    val feedback: String? = null,
+    val message: String? = null
+)
