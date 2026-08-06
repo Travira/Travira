@@ -26,7 +26,7 @@ const generateAccessToken = (user)=>{
         secret,
 
         {
-            expiresIn:"15m"
+            expiresIn:"30d"
         }
 
     );
