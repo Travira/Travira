@@ -7,29 +7,30 @@ Travira is an AI-powered Android travel application that helps users discover po
 * 🔐 **User Authentication**
 
     * Secure Sign Up and Login
-    * User profile management
+    * User and admin profile management
 
 * 📍 **Discover Popular Places**
 
     * Browse famous tourist attractions
     * Explore historical, cultural, and natural landmarks
     * View detailed information about each destination
+    * Community reviews and ratings
 
-* 🗺️ **Interactive Maps**
+* 🗺️ **Interactive Maps**(Future Update)
 
     * Powered by **Mapbox**
     * View destinations on an interactive map
     * Get directions and location details
     * Explore nearby attractions
 
-* 🤖 **AI Travel Chatbot**
+* 🤖 **AI Travel Chatbot**(Gemini Flash 3.5)
 
     * Ask questions about destinations
     * Learn about local culture, traditions, and history
     * Receive travel tips and recommendations
     * Get information about nearby places and attractions
 
-* 🏛️ **Destination Information**
+* 🏛️ **Destination Information**(Future Update)
 
     * Historical background
     * Best time to visit
@@ -38,7 +39,7 @@ Travira is an AI-powered Android travel application that helps users discover po
     * Nearby attractions
     * Travel tips
 
-* 🍛 **Local Guide**
+* 🍛 **Local Guide**(Future Update)
 
     * Famous local foods
     * Traditional festivals
@@ -50,6 +51,7 @@ Travira is an AI-powered Android travel application that helps users discover po
 
     * Save favorite destinations
     * Access saved places anytime
+    * User can add new place and give a little bit contribution to the world.
 
 ---
 
@@ -78,7 +80,6 @@ Travira is an AI-powered Android travel application that helps users discover po
 * Weather forecasts
 * Multi-language support
 * Emergency contact information
-* Community reviews and ratings
 
 ---
 
@@ -86,16 +87,93 @@ Travira is an AI-powered Android travel application that helps users discover po
 
 ```text
 Travira/
-├── app/
-├── ui/
-├── data/
-├── models/
-├── repository/
-├── viewmodel/
-├── network/
-├── chatbot/
-├── utils/
-└── map/
+├── README.md
+│
+├── android/                          # Android (Kotlin + Jetpack Compose)
+│   ├── app/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── AndroidManifest.xml
+│   │       │   ├── java/com/example/travira/
+│   │       │   │   ├── MainActivity.kt
+│   │       │   │   ├── auth/
+│   │       │   │   │   └── TokenManager.kt
+│   │       │   │   ├── components/
+│   │       │   │   │   ├── AppCard.kt
+│   │       │   │   │   └── TraviraBottomBar.kt
+│   │       │   │   ├── data/
+│   │       │   │   │   └── PlaceData.kt
+│   │       │   │   ├── model/
+│   │       │   │   │   ├── Place.kt
+│   │       │   │   │   └── User.kt
+│   │       │   │   ├── navigation/
+│   │       │   │   │   ├── BottomNavItem.kt
+│   │       │   │   │   └── NavGraph.kt
+│   │       │   │   ├── remote/                    # API layer (Retrofit)
+│   │       │   │   │   ├── AdminApi.kt
+│   │       │   │   │   ├── ApiModels.kt
+│   │       │   │   │   ├── AuthApi.kt
+│   │       │   │   │   ├── ChatApi.kt
+│   │       │   │   │   ├── CloudinaryUploader.kt
+│   │       │   │   │   ├── Placeapi.kt
+│   │       │   │   │   └── retrofitInstance.kt
+│   │       │   │   ├── screens/
+│   │       │   │   │   ├── admin/
+│   │       │   │   │   │   └── AdminDashboardScreen.kt
+│   │       │   │   │   ├── ai/
+│   │       │   │   │   │   └── AIChatScreen.kt
+│   │       │   │   │   ├── auth/
+│   │       │   │   │   │   └── LoginScreen.kt
+│   │       │   │   │   ├── home/
+│   │       │   │   │   │   └── HomeScreen.kt
+│   │       │   │   │   ├── places/
+│   │       │   │   │   │   ├── AddPlaceScreen.kt
+│   │       │   │   │   │   ├── EditPlaceScreen.kt
+│   │       │   │   │   │   └── PlacesScreen.kt
+│   │       │   │   │   ├── profile/
+│   │       │   │   │   │   ├── ContributionScreen.kt
+│   │       │   │   │   │   ├── EditProfileScreen.kt
+│   │       │   │   │   │   ├── NotificationsScreen.kt
+│   │       │   │   │   │   ├── ProfileScreen.kt
+│   │       │   │   │   │   ├── VisitedPlacesScreen.kt
+│   │       │   │   │   │   └── WishlistScreen.kt
+│   │       │   │   │   └── splash/
+│   │       │   │   │       ├── IntroVideoScreen.kt
+│   │       │   │   │       └── splashScreen.kt
+│   │       │   │   └── ui/theme/
+│   │       │   │       ├── Color.kt
+│   │       │   │       ├── Theme.kt
+│   │       │   │       └── Type.kt
+│   │       │   └── res/                           # Drawables, values, mipmaps, etc.
+│   │       ├── androidTest/
+│   │       └── test/
+│   ├── build.gradle.kts
+│   ├── settings.gradle.kts
+│   └── gradle/
+│
+└── backend/                          # Node.js + Express API
+    ├── server.js
+    ├── package.json
+    ├── package-lock.json
+    ├── controllers/
+    │   ├── admin.js
+    │   ├── chat.js
+    │   ├── place.js
+    │   └── user.js
+    ├── data/
+    │   └── samplePlaces.json
+    ├── middleware/
+    │   ├── adminMiddleware.js
+    │   └── authMiddleware.js
+    ├── models/
+    │   ├── place.js
+    │   └── user.js
+    └── routes/
+        ├── adminRoutes.js
+        ├── chatRoutes.js
+        ├── placeroute.js
+        └── user.js
 ```
 
 ---
@@ -108,7 +186,7 @@ Travira aims to become an intelligent travel companion by combining AI, interact
 
 ## 👨‍💻 Developer
 
-**Preet Patel** | **Yagnik padaliya**
+**Preet Patel(Founder , Idea , Most Contributions)** | **Yagnik padaliya(Co-Founder , Solving Problems , Helping and Suggestions)**
 
 ---
 
