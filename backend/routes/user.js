@@ -6,7 +6,6 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const {
   register,
-  registerAdmin,
   login,
   profile,
   getCurrentUser,
@@ -22,7 +21,6 @@ const {
 } = require("../controllers/user");
 
 router.post("/register", register);
-router.post("/register-admin", registerAdmin);
 router.post("/login", login);
 router.post("/refresh-token", refreshToken);
 

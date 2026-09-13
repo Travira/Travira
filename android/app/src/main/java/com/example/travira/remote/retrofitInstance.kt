@@ -128,11 +128,9 @@ object RetrofitInstance {
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            // Render free tier can cold-start for 30–50s; keep generous timeouts
-            .connectTimeout(45, TimeUnit.SECONDS)
-            .readTimeout(90, TimeUnit.SECONDS)
-            .writeTimeout(90, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(logging)
             .build()
     }

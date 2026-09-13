@@ -55,7 +55,7 @@ import com.example.travira.R
 import com.example.travira.model.User
 
 enum class ProfileSection {
-    EDIT_PROFILE, WISHLIST, CONTRIBUTION, VISITED, NOTIFICATIONS
+    EDIT_PROFILE, WISHLIST, VISITED, NOTIFICATIONS
 }
 
 @Composable
@@ -212,14 +212,6 @@ fun ProfileScreen(
             )
             MenuDivider()
             ProfileMenuItem(
-                icon = Icons.Default.Place,
-                title = "Contribution",
-                subtitle = "Places you added",
-                trailing = if (contributionCount > 0) contributionCount.toString() else null,
-                onClick = { requireLoginThen(ProfileSection.CONTRIBUTION) }
-            )
-            MenuDivider()
-            ProfileMenuItem(
                 icon = Icons.Default.TravelExplore,
                 title = "Visited Places",
                 trailing = if (visitedCount > 0) visitedCount.toString() else null,
@@ -229,7 +221,6 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Icons.Default.Notifications,
                 title = "Notifications",
-                subtitle = "Admin feedback & place updates",
                 trailing = if (notificationCount > 0) notificationCount.toString() else null,
                 onClick = { requireLoginThen(ProfileSection.NOTIFICATIONS) }
             )

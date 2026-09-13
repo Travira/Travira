@@ -108,7 +108,8 @@ fun PlaceScreen(
         !uid.isNullOrBlank() && place.addedById.isNotBlank() && place.addedById == uid
     }
     val isAdmin = tokenManager?.isAdmin == true
-    val canManage = isOwner || isAdmin
+    // Only admins can edit / delete places
+    val canManage = isAdmin
 
     fun authOr(action: suspend (String) -> Unit) {
         val token = tokenManager?.accessToken
@@ -163,11 +164,7 @@ fun PlaceScreen(
         deleting = true
         scope.launch {
             try {
-                if (isAdmin && !isOwner) {
-                    RetrofitInstance.adminApi.deletePlace("Bearer $token", place._id)
-                } else {
-                    RetrofitInstance.placeApi.deletePlace("Bearer $token", place._id)
-                }
+                RetrofitInstance.adminApi.deletePlace("Bearer $token", place._id)
                 actionMsg = "Place deleted"
                 onDeleted?.invoke()
             } catch (e: Exception) {
@@ -185,10 +182,8 @@ fun PlaceScreen(
             title = { Text("Delete place?") },
             text = {
                 Text(
-                    if (isAdmin && !isOwner)
-                        "This will permanently remove \"${place.name}\" and notify the owner."
-                    else
-                        "This will permanently remove \"${place.name}\"."
+                    "This will permanently remove \"${place.name}\"."
+
                 )
             },
             confirmButton = {

@@ -35,7 +35,6 @@ import com.example.travira.screens.home.HomeScreen
 import com.example.travira.screens.places.AddPlaceScreen
 import com.example.travira.screens.places.EditPlaceScreen
 import com.example.travira.screens.places.PlaceScreen
-import com.example.travira.screens.profile.ContributionScreen
 import com.example.travira.screens.profile.EditProfileScreen
 import com.example.travira.screens.profile.NotificationsScreen
 import com.example.travira.screens.profile.ProfileScreen
@@ -329,15 +328,6 @@ fun TraviraApp(
             )
         }
 
-        profileSection == ProfileSection.CONTRIBUTION -> {
-            BackHandler { profileSection = null }
-            ContributionScreen(
-                tokenManager = tokenManager,
-                onBack = { profileSection = null },
-                onPlaceClick = { selectedPlace = it }
-            )
-        }
-
         profileSection == ProfileSection.VISITED -> {
             BackHandler { profileSection = null }
             VisitedPlacesScreen(
@@ -371,7 +361,13 @@ fun TraviraApp(
                             errorMessage = errorMessage,
                             onPlaceClick = { selectedPlace = it },
                             onRetry = { refreshTrigger++ },
-                            onAddPlaceClick = { requireAuth(PendingAction.ADD_PLACE) },
+                            onRefresh = { refreshTrigger++ },
+                            onAddPlaceClick = {
+                                if (tokenManager.isAdmin) {
+                                    showAddPlace = true
+                                }
+                            },
+                            showAddPlaceFab = tokenManager.isAdmin,
                             userName = currentUser?.name
                                 ?: tokenManager.userName
                                 ?: if (isLoggedIn) "Traveler" else "Guest",

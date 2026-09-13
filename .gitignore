@@ -24,3 +24,5 @@ backend/.env
 
 .gradle/
 **/gradle-daemon-jvm.properties
+
+Travira.app.env

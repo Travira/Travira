@@ -75,12 +75,7 @@ fun AdminDashboardScreen(
     modifier: Modifier = Modifier
 ) {
     var tab by remember { mutableIntStateOf(0) }
-    val isSuper = tokenManager.isSuperAdmin
-    val tabs = if (isSuper) {
-        listOf("Places", "Users", "Approvals", "Admins")
-    } else {
-        listOf("Places", "Users", "Approvals")
-    }
+    val tabs = listOf("Places", "Users")
 
     Scaffold(
         topBar = {
@@ -117,12 +112,7 @@ fun AdminDashboardScreen(
                         text = { Text(title) },
                         icon = {
                             Icon(
-                                when (i) {
-                                    0 -> Icons.Default.Place
-                                    1 -> Icons.Default.People
-                                    2 -> Icons.Default.Check
-                                    else -> Icons.Default.AdminPanelSettings
-                                },
+                                if (i == 0) Icons.Default.Place else Icons.Default.People,
                                 contentDescription = null
                             )
                         }
@@ -133,8 +123,6 @@ fun AdminDashboardScreen(
             when (tabs.getOrNull(tab)) {
                 "Places" -> AdminPlacesTab(tokenManager)
                 "Users" -> AdminUsersTab(tokenManager)
-                "Approvals" -> AdminApprovalsTab(tokenManager)
-                "Admins" -> AdminAdminsTab(tokenManager)
             }
         }
     }
@@ -186,10 +174,7 @@ private fun AdminPlacesTab(tokenManager: TokenManager) {
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                CountChip("All ${c.total}", filter == "all") { filter = "all" }
-                CountChip("Pending ${c.pending}", filter == "pending") { filter = "pending" }
-                CountChip("Approved ${c.approved}", filter == "approved") { filter = "approved" }
-                CountChip("Rejected ${c.rejected}", filter == "rejected") { filter = "rejected" }
+                CountChip("All ${c.total}", true) { }
             }
         }
 
@@ -275,29 +260,7 @@ private fun AdminPlaceDetail(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var feedback by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-
-    fun act(status: String) {
-        scope.launch {
-            busy = true
-            message = null
-            try {
-                val token = tokenManager.accessToken ?: return@launch
-                RetrofitInstance.adminApi.setPlaceStatus(
-                    "Bearer $token",
-                    place._id,
-                    StatusBody(status = status, feedback = feedback.ifBlank { null }, message = feedback.ifBlank { null })
-                )
-                message = "Status set to $status. User notified."
-            } catch (e: Exception) {
-                message = e.message
-            } finally {
-                busy = false
-            }
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -320,37 +283,11 @@ private fun AdminPlaceDetail(
         Spacer(modifier = Modifier.height(12.dp))
         Text(place.name, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(listOfNotNull(place.city, place.state, place.country).joinToString(", "), color = Color.Gray)
-        StatusBadge(place.approvalStatus ?: "—")
         Spacer(modifier = Modifier.height(8.dp))
         Text(place.shortDescription ?: place.description ?: "", fontSize = 14.sp)
         Spacer(modifier = Modifier.height(12.dp))
         Text("Rating: ${place.displayRating}  •  Visitors: ${place.visitorsCount}", fontSize = 13.sp)
 
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = feedback,
-            onValueChange = { feedback = it },
-            label = { Text("Feedback (for user notification)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = { act("approved") },
-                enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-            ) { Text("Approve") }
-            Button(
-                onClick = { act("rejected") },
-                enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-            ) { Text("Reject") }
-            Button(
-                onClick = { act("pending") },
-                enabled = !busy,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF9A825))
-            ) { Text("Pending") }
-        }
         message?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(it, color = Color(0xFF1565C0))

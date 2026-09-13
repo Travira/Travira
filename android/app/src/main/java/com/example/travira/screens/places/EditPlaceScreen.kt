@@ -250,19 +250,11 @@ fun EditPlaceScreen(
                                 imageUrl = imageUrl,
                                 editNote = editNote.trim().ifBlank { null }
                             )
-                            val res = if (isAdminEdit) {
-                                RetrofitInstance.adminApi.updatePlace(
-                                    bearer = "Bearer $token",
-                                    id = place._id,
-                                    body = body
-                                )
-                            } else {
-                                RetrofitInstance.placeApi.updatePlace(
-                                    bearer = "Bearer $token",
-                                    id = place._id,
-                                    body = body
-                                )
-                            }
+                            val res = RetrofitInstance.adminApi.updatePlace(
+                                bearer = "Bearer $token",
+                                id = place._id,
+                                body = body
+                            )
                             val updated = res.place ?: place.copy(
                                 name = body.name,
                                 shortDescription = body.shortDescription,
@@ -271,13 +263,9 @@ fun EditPlaceScreen(
                                 state = body.state,
                                 country = body.country,
                                 location = body.location,
-                                imageUrl = body.imageUrl,
-                                approvalStatus = if (isAdminEdit) place.approvalStatus else "pending",
-                                adminFeedback = body.editNote ?: place.adminFeedback
+                                imageUrl = body.imageUrl
                             )
-                            successMsg = res.message
-                                ?: if (isAdminEdit) "Saved. Owner notified."
-                                else "Saved and sent for review. Admins notified."
+                            successMsg = res.message ?: "Place saved"
                             kotlinx.coroutines.delay(700)
                             onSaved(updated)
                         } catch (e: Exception) {
